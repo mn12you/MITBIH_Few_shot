@@ -1,0 +1,60 @@
+import os
+from pathlib import Path
+import sys
+SCRIPT_DIR =Path(__file__).parents[0]
+print(SCRIPT_DIR)
+data_base_dir="mit_bih_sub"
+sys.path.append(SCRIPT_DIR)
+from args import parse_args
+import wfdb
+import pandas as pd 
+import numpy as np
+import scipy.signal as sp
+
+arg=parse_args()
+data_record=Path(SCRIPT_DIR,arg.data_dir,'RECORDS')
+df=pd.DataFrame(columns=['ecg_id','patient_id','labels','filename'])
+
+#### filter settinh ####
+fs=360
+window_bond=int(fs*0.36)
+med_window=int(0.72*fs)
+b,a=sp.butter(5,50,btype="lowpass",analog=False,fs=fs)
+
+records=[]
+with open(data_record) as f:
+    records = f.readlines()
+
+def normalize(sig):
+    new_sig=(sig-sig.min())/sig.max()
+    return new_sig
+count=0
+
+for record in records:
+    patient_id=str(record[:-1])
+    patient_record = wfdb.rdrecord("./mit_bih/"+patient_id)
+    record_signal=patient_record.p_signal[:,0]
+    record_signal=sp.filtfilt(b,a,record_signal)
+    base=sp.medfilt(record_signal,med_window)
+    record_signal=record_signal-base
+    patient_annotation = wfdb.rdann("./mit_bih/"+patient_id,extension="atr")
+    file_path=Path(data_base_dir,patient_id)
+    if file_path.exists():
+        print("dir exists")
+    else:
+        file_path.mkdir()
+
+    #### filter conduct ####
+
+
+    for ind, ann in enumerate(patient_annotation.sample):
+        filename=Path(data_base_dir,patient_id,patient_id+str(ind)+".npy")
+        if ann>window_bond and ann< len(record_signal)-(window_bond):
+                beat_sig=record_signal[ann-window_bond:ann+window_bond+1]
+                beat_sig=normalize(beat_sig)
+                np.save(filename,beat_sig)
+                df_temp=pd.DataFrame({'ecg_id':count,'patient_id':patient_id,'labels':patient_annotation.symbol[ind],'filename':filename}, index=[0])
+                df=pd.concat([df,df_temp], ignore_index=True)
+                count=count+1
+    df.to_csv("./mit_bih.csv",index=False)
+
