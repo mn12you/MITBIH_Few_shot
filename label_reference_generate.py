@@ -45,16 +45,17 @@ for record in records:
         file_path.mkdir()
 
     #### filter conduct ####
-
+    label_transform={"N":"N","L":"N","R":"N","e":"N","j":"N","A":"S","a":"S","J":"S","S":"S","V":"V","E":"V","F":"F","/":"Q","f":"Q","Q":"Q"}
 
     for ind, ann in enumerate(patient_annotation.sample):
-        filename=Path(data_base_dir,patient_id,patient_id+str(ind)+".npy")
+        filename=Path(data_base_dir,patient_id,patient_id+"_"+str(ind)+".npy")
         if ann>window_bond and ann< len(record_signal)-(window_bond):
-                beat_sig=record_signal[ann-window_bond:ann+window_bond+1]
-                beat_sig=normalize(beat_sig)
-                np.save(filename,beat_sig)
-                df_temp=pd.DataFrame({'ecg_id':count,'patient_id':patient_id,'labels':patient_annotation.symbol[ind],'filename':filename}, index=[0])
-                df=pd.concat([df,df_temp], ignore_index=True)
-                count=count+1
+                if patient_annotation.symbol[ind] in  label_transform.keys():
+                    beat_sig=record_signal[ann-window_bond:ann+window_bond+1]
+                    beat_sig=normalize(beat_sig)
+                    np.save(filename,beat_sig)
+                    df_temp=pd.DataFrame({'ecg_id':count,'patient_id':patient_id,'labels':label_transform[patient_annotation.symbol[ind]],'filename':filename}, index=[0])
+                    df=pd.concat([df,df_temp], ignore_index=True)
+                    count=count+1
     df.to_csv("./mit_bih.csv",index=False)
 
