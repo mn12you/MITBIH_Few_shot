@@ -2,3 +2,5 @@ mit_bih/*
 !mit_bih/.gitkeep
 mit_bih_sub/*
 !mit_bih_sub/.gitkeep
+data/*
+!data/.gitkeep
