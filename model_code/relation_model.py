@@ -43,7 +43,7 @@ class Sembedencoder(nn.Sequential):
         layer_temp.append(nn.ReLU())
         layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
 
-        layer_temp.append(nn.Flatten(in_features=384,out_features=16))
+        layer_temp.append(nn.Flatten())
         layer_temp.append(nn.Linear(in_features=384,out_features=16))
         # for i in range(2):
         #     if i >0:
@@ -59,7 +59,14 @@ class Sembedencoder(nn.Sequential):
         #     layer_temp.append(nn.BatchNorm1d(inplanes))
         #     layer_temp.append(nn.ReLU(inplace=True))
         super().__init__(*layer_temp)
-    
+
+class transform_fully(nn.Sequential):
+   
+
+    def __init__(self,input_channels=1):
+        layer_temp=[]
+        layer_temp.append(nn.Linear(in_features=1,out_features=1))
+        super().__init__(*layer_temp)
 
 
     

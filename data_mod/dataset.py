@@ -5,6 +5,8 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import LabelBinarizer
 import pickle
+import torch 
+
 class ECGDataset(Dataset):
     def __init__(self, fs=360, data_dir="./mit_bih", label_csv="mit_bih_sub/mit_bih.csv"):
         super(ECGDataset, self).__init__()
@@ -19,3 +21,35 @@ class ECGDataset(Dataset):
         return data,label
     def __len__(self):
         return len(self.df)
+    
+class ECGDataset_all(Dataset):
+    def __init__(self,  data_dir,label_dir):
+        super(ECGDataset_all, self).__init__()
+        self.data=np.load(data_dir)
+        self.labels=np.load(label_dir)
+        # self.data=pkl.load(open(data_dir,"rb"))
+        # self.labels=pkl.load(open(data_dir,"rb"))
+
+    def __getitem__(self, index: int):
+        row = self.data[index]  
+        labels=self.labels[index]
+        return torch.from_numpy(row).float(),torch.from_numpy(labels).float()
+
+    def __len__(self):
+        return self.data.shape[0]
+    
+class ECGDataset_pair(Dataset):
+    def __init__(self,  data_dir,label_dir):
+        super(ECGDataset_pair, self).__init__()
+        self.data=np.load(data_dir)
+        self.labels=np.load(label_dir)
+        # self.data=pkl.load(open(data_dir,"rb"))
+        # self.labels=pkl.load(open(data_dir,"rb"))
+
+    def __getitem__(self, index: int):
+        row = self.data[index]  
+        labels=self.labels[index]
+        return torch.from_numpy(row).float(),torch.from_numpy(labels).float()
+
+    def __len__(self):
+        return self.data.shape[0]
