@@ -59,16 +59,17 @@ if __name__=="__main__":
         labels_list.append(labels)
     y_data = np.vstack(output_list)
     y_label = np.vstack(labels_list)
+    y_data=np.expand_dims(y_data, axis=1)
     y_label=np.squeeze(y_label,axis=None)
     print(y_label.shape)
     print(y_data.shape)
     data_diff=["10","50","90","150","500"]
     for diff in data_diff:
         base_path=path=Path("./data",basepath+"_"+diff)
-        train_data_path=Path(base_path,"train","data")
-        train_label_path=Path(base_path,"train","label")
-        test_data_path=Path(base_path,"test","data")
-        test_label_path=Path(base_path,"test","label")
+        train_data_path=Path(base_path,"train","data",basepath+"_"+diff+".npy")
+        train_label_path=Path(base_path,"train","label",basepath+"_"+diff+".npy")
+        test_data_path=Path(base_path,"test","data",basepath+"_"+diff+".npy")
+        test_label_path=Path(base_path,"test","label",basepath+"_"+diff+".npy")
         random_num=int(diff)
         train_data=[]
         train_label=[]
