@@ -169,16 +169,20 @@ from torchsummary import summary
 #         os.makedirs(path)
 
 
-def train(dataloader,encoder_net, net, arg, criterion, epoch, scheduler, optimizer, device):
+def train(dataloader,encoder_net, net, arg, criterion, epoch, optimizer, device):
     print('Training epoch %d:' % epoch)
+    net.train()
+    encoder_net.train()
     running_loss = 0
     output_list, labels_list = [], []
     for _, (data1,data2,labels) in enumerate(tqdm(dataloader)):
-        data1,dataa2,labels= data1.float().to(device), data2.float().to(device), labels.float().to(device)
+        data1,data2,labels= data1.float().to(device), data2.float().to(device), labels.float().to(device)
         embed1=encoder_net(data1)
         embed2=encoder_net(data2)
         distance=torch.norm((embed1-embed2), p=1, dim=1)
-        output=nn.Sigmoid(net(distance))
+        distance=torch.unsqueeze(distance, 1)
+        m=nn.Sigmoid()
+        output=m(net(distance))
         loss = criterion(output, labels)
         optimizer.zero_grad()
         loss.backward()
@@ -187,24 +191,25 @@ def train(dataloader,encoder_net, net, arg, criterion, epoch, scheduler, optimiz
         output_list.append(output.data.cpu().numpy())
         labels_list.append(labels.data.cpu().numpy())
     print(optimizer.param_groups[0]['lr'])
-    scheduler.step()
+    # scheduler.step()
     loss_total=running_loss/(len(dataloader))
     print('Loss: %.4f' % loss_total)
-    y_trues = np.vstack(labels_list)
-    y_scores = np.vstack(output_list)
+    # y_trues = np.vstack(labels_list)
+    # y_scores = np.vstack(output_list)
     torch.save(net.state_dict(), arg.transform_model_path)
     torch.save(encoder_net.state_dict(), arg.encoder_model_path)   
-    print("Macro Precision: %.3f, Macro Recall: %.3f, Macro F1 score: %.3f, Macro AUC: %.3f, with threshold: %.3f" % cal_scores(y_trues,y_scores))
+    # print("Macro Precision: %.3f, Macro Recall: %.3f, Macro F1 score: %.3f, Macro AUC: %.3f, with threshold: %.3f" % cal_scores(y_trues,y_scores))
     return loss_total
 
 def train_relation(arg,name):
     if arg.phase=="Train":
-        data_path=Path("./data",name,"train","data","data.npy")
-        label_path=Path("./data",name,"train","data","data.npy")
+        data_path_1=Path("./data",name,"train","data",name+"1.npy")
+        data_path_2=Path("./data",name,"train","data",name+"2.npy")
+        label_path=Path("./data",name,"train","label",name+".npy")
         arg.transform_model_path=Path("./models",name,arg.transform_model_name+".pth")
         arg.encoder_model_path=Path("./models",name,arg.encoder_model_name+".pth")
         arg.result_path=Path("./result",name)
-        train_dataset=ECGDataset_pair(data_path,label_path)
+        train_dataset=ECGDataset_pair(data_path_1,data_path_2,label_path)
         train_loader = DataLoader(train_dataset, batch_size=arg.batch_size, shuffle=True, num_workers=arg.num_workers, pin_memory=True)
         seed = arg.seed
         torch.manual_seed(seed)
@@ -225,7 +230,7 @@ def train_relation(arg,name):
         summary(net,(1,))
         summary(encoder_net,(1,259))
         optimizer = torch.optim.Adam(net.parameters(), lr=arg.lr)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10, gamma=0.1)
+        # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10, gamma=0.1)
         criterion = nn.BCELoss()
         print("train")
         if arg.resume:
@@ -233,7 +238,7 @@ def train_relation(arg,name):
             encoder_net.load_state_dict(torch.load(arg.encoder_model_path, map_location=device))
         train_loss=[]
         for epoch in range(arg.epochs):
-            train_loss.append(train(train_loader,encoder_net, net, arg, criterion, epoch, scheduler, optimizer, device))
+            train_loss.append(train(train_loader,encoder_net, net, arg, criterion, epoch, optimizer, device))
         np.save(arg.result_path+"train_loss.npy",train_loss)
     else:
         pass
@@ -241,14 +246,14 @@ def train_relation(arg,name):
 def train_on_dataset(arg,dataset):
     for dataset_num in dataset:
         if arg.data_dir=="./mit_bih":
-            name="mitbih_"+str(dataset_num)
+            name="mitbih_"+str(dataset_num)+"_pair"
             train_relation(arg,name)
 
 if __name__=="__main__":
     arg = ar.parse_args()
     data_dir = os.path.normpath(arg.data_dir)
     database = os.path.basename(data_dir)
-    dataset=[10,50,90,150,500]
+    dataset=[10,50,90]
     print(arg.data_dir)
     print("Train on:",arg.encoder_model_name)
     print("Train on:",arg.transform_model_name)

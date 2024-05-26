@@ -39,17 +39,19 @@ class ECGDataset_all(Dataset):
         return self.data.shape[0]
     
 class ECGDataset_pair(Dataset):
-    def __init__(self,  data_dir,label_dir):
+    def __init__(self,  data_dir_1,data_dir_2,label_dir):
         super(ECGDataset_pair, self).__init__()
-        self.data=np.load(data_dir)
+        self.data1=np.load(data_dir_1)
+        self.data2=np.load(data_dir_2)
         self.labels=np.load(label_dir)
         # self.data=pkl.load(open(data_dir,"rb"))
         # self.labels=pkl.load(open(data_dir,"rb"))
 
     def __getitem__(self, index: int):
-        row = self.data[index]  
+        data_1 = self.data1[index]
+        data_2 = self.data2[index]    
         labels=self.labels[index]
-        return torch.from_numpy(row).float(),torch.from_numpy(labels).float()
+        return torch.from_numpy(data_1).float(),torch.from_numpy(data_2).float(),torch.from_numpy(labels).float()
 
     def __len__(self):
-        return self.data.shape[0]
+        return self.data1.shape[0]
