@@ -55,3 +55,21 @@ class ECGDataset_pair(Dataset):
 
     def __len__(self):
         return self.data1.shape[0]
+    
+class ECGDataset_few_shot(Dataset):
+    def __init__(self,  data_support_dir,data_query_dir,label_dir):
+        super(ECGDataset_few_shot, self).__init__()
+        self.data_support=np.load(data_support_dir)
+        self.data_query=np.load(data_query_dir)
+        self.labels=np.load(label_dir)
+        # self.data=pkl.load(open(data_dir,"rb"))
+        # self.labels=pkl.load(open(data_dir,"rb"))
+
+    def __getitem__(self, index: int):
+        data_1 = self.data_support[index]
+        data_2 = self.data_query[index]    
+        labels=self.labels[index]
+        return torch.from_numpy(data_1).float(),torch.from_numpy(data_2).float(),torch.from_numpy(labels).float()
+
+    def __len__(self):
+        return self.data_support.shape[0]

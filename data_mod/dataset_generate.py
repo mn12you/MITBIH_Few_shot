@@ -63,7 +63,7 @@ if __name__=="__main__":
     y_label=np.squeeze(y_label,axis=None)
     print(y_label.shape)
     print(y_data.shape)
-    data_diff=["10","50","90","150","500"]
+    data_diff=["150","500"]
     for diff in data_diff:
         base_path=path=Path("./data",basepath+"_"+diff)
         train_data_path=Path(base_path,"train","data",basepath+"_"+diff+".npy")
