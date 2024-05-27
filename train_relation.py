@@ -210,6 +210,7 @@ def evaluation(dataloader,net,arg,shot,device):
         if shot>1:
             output=output.view(batch,shot,class_num,-1)
             output=output.sum(dim=1).squeeze(-1)
+            print(output.shape)
         else:
             output=output.view(-1,class_num)
         output_list.append(output.data.cpu().numpy())
@@ -291,7 +292,6 @@ def train_relation(arg,name):
             net =SiameseNetwork().to(device)  
             summary(net,[(1,259),(1,259)])
            
-            summary(net,(1,259))
             # net.load_state_dict(torch.load(arg.transform_model_path,map_location=device))
             net.load_state_dict(torch.load(arg.encoder_model_path, map_location=device))
             y_true,y_score=evaluation(test_loader,net,arg,shot,device)
@@ -310,7 +310,7 @@ if __name__=="__main__":
     data_dir = os.path.normpath(arg.data_dir)
     database = os.path.basename(data_dir)
     # dataset=[10,50,90,150,500]
-    dataset=[50,90]
+    dataset=[10]
     print(arg.data_dir)
     print("Train on:",arg.encoder_model_name)
     print("Train on:",arg.transform_model_name)
