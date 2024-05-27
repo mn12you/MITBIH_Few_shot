@@ -1,0 +1,22 @@
+#!/bin/bash
+#SBATCH -A MST112277       # Account name/project number
+#SBATCH -J train_triplet      # Job name
+#SBATCH --partition=gp1d
+#SBATCH --nodes=1                ## 索取 2 節點
+#SBATCH --ntasks-per-node=1      ## 每個節點運行 8 srun tasks
+#SBATCH --cpus-per-task=4        ## 每個 srun task 索取 4 CPUs
+#SBATCH --gres=gpu:1             ## 每個節點索取 8 GPUs
+#SBATCH -o TWCC_log/%j.out           # Path to the standard output file
+#SBATCH -e TWCC_log/%j.err           # Path to the standard error ouput file
+#SBATCH --mail-user=s1212mn@gmail.com   # email
+#SBATCH --mail-type=BEGIN,END
+
+
+
+
+module purge
+ml miniconda3
+conda activate ECG_SHAP_39 #進入 conda 環境
+#python -u tain_triplet.py --dataset=baseline_ml_diag --model_name=resnet1d18_trip
+python -u "data_mod/few_shot dataset generate.py"
+
