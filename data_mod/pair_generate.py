@@ -12,7 +12,7 @@ from matplotlib import pyplot as plt
 from data_mod.dataset import ECGDataset_all
 from sklearn.model_selection import train_test_split
 import random
-
+from itertools import combinations
 
 def folder_generate(name):
     data_diff=["10","50","90","150","500"]
@@ -70,22 +70,29 @@ if __name__=="__main__":
         train_data_path_save_2=Path(base_path,"train","data",basepath+"_"+diff+"_"+"pair2"+".npy")
         train_label_path_save=Path(base_path,"train","label",basepath+"_"+diff+"_"+"pair"+".npy")
         train_dataset=ECGDataset_all(train_data_path,train_label_path)
-        train_loader = DataLoader(train_dataset, batch_size=1, shuffle=False, num_workers=1)
-        
+        train_loader = DataLoader(train_dataset, batch_size=64, shuffle=False, num_workers=8)
+
+        output_list=[]
+        labels_list=[]
+        for _, (data, labels) in enumerate(tqdm(train_loader)):
+                output_list.append(data)
+                labels_list.append(labels)
+        y_data = np.vstack(output_list)
+        y_label = np.vstack(labels_list)
+
         output_list_1=[]
         output_list_2=[]
-        labels_list=[]#1 the same; 0 different
-        for _, (data, labels) in enumerate(tqdm(train_loader)):
-            for _, (data2, labels2) in enumerate(train_loader):
-                if np.argmax(labels)==np.argmax(labels2):
-                    labels_list.append(np.array([[1]]))
-                else:
-                    labels_list.append(np.array([[0]]))
-                output_list_1.append(data)
-                output_list_2.append(data2)
-        y_data1 = np.vstack(output_list_1)
-        y_data2 = np.vstack(output_list_2)
-        y_label = np.vstack(labels_list)
+        final_label_list=[]#1 the same; 0 different
+        for i, j in combinations(range(y_label.shape[0]), 2):
+            output_list_1.append(i)
+            output_list_2.append(j)
+            if np.argmax(y_label[i])==np.argmax(y_label[j]):
+                final_label_list.append(np.array([[1]]))
+            else:
+                final_label_list.append(np.array([[0]]))
+        y_label = np.vstack(final_label_list)
+        y_data1=y_data[output_list_1]
+        y_data2=y_data[output_list_2]
         print(diff)
         print(y_data1.shape)
         print(y_data2.shape)

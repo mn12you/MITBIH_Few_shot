@@ -13,7 +13,7 @@ from pathlib import Path
 
 from tqdm import tqdm
 import numpy as np
-from model_code.relation_model import transform_fully, Sembedencoder
+from model_code.relation_model import transform_fully, Sembedencoder,SiameseNetwork
 from data_mod.dataset import ECGDataset_pair, ECGDataset_few_shot
 # from dataset_alldata import ECGDataset_IE
 from utils import *
@@ -169,22 +169,17 @@ from torchsummary import summary
 #         os.makedirs(path)
 
 
-def train(dataloader,encoder_net, net, arg, criterion, epoch, optimizer, device):
+def train(dataloader, net, arg, criterion, epoch, optimizer, device):
     print('Training epoch %d:' % epoch)
     net.train()
-    encoder_net.train()
+    # encoder_net.train()
     running_loss = 0
     output_list, labels_list = [], []
     for _, (data1,data2,labels) in enumerate(tqdm(dataloader)):
         data1,data2,labels= data1.float().to(device), data2.float().to(device), labels.float().to(device)
-        embed1=encoder_net(data1)
-        embed2=encoder_net(data2)
-        distance=torch.norm((embed1-embed2), p=1, dim=1)
-        distance=torch.unsqueeze(distance, 1)
-        m=nn.Sigmoid()
-        output=m(net(distance))
-        loss = criterion(output, labels)
         optimizer.zero_grad()
+        output=net(data1,data2)
+        loss = criterion(output, labels)
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
@@ -196,14 +191,13 @@ def train(dataloader,encoder_net, net, arg, criterion, epoch, optimizer, device)
     print('Loss: %.4f' % loss_total)
     # y_trues = np.vstack(labels_list)
     # y_scores = np.vstack(output_list)
-    torch.save(net.state_dict(), arg.transform_model_path)
-    torch.save(encoder_net.state_dict(), arg.encoder_model_path)   
+    torch.save(net.state_dict(), arg.encoder_model_path)
+    # torch.save(encoder_net.state_dict(), arg.encoder_model_path)   
     # print("Macro Precision: %.3f, Macro Recall: %.3f, Macro F1 score: %.3f, Macro AUC: %.3f, with threshold: %.3f" % cal_scores(y_trues,y_scores))
     return loss_total
 
-def evaluation(dataloader,encoder_net,net,arg,shot,device):
+def evaluation(dataloader,net,arg,shot,device):
     net.eval()
-    encoder_net.eval()
     running_loss = 0
     output_list, labels_list = [], []
     for _, (support,query,labels) in enumerate(tqdm(dataloader)):
@@ -211,18 +205,13 @@ def evaluation(dataloader,encoder_net,net,arg,shot,device):
         batch=labels.shape[0]
         class_num=labels.shape[-1]
         support=support.view(batch*class_num*shot,-1).unsqueeze(1)
-        embed_query=encoder_net(query)
-        embed_support=encoder_net(support)
-        embed_query_ext=embed_query.unsqueeze(1).repeat(1,class_num*shot,1)
-        embed_query_ext=embed_query_ext.view(batch*class_num*shot,-1)
-        distance=torch.norm((embed_query_ext-embed_support), p=1, dim=1)
-        distance=torch.unsqueeze(distance, 1)
-        m=nn.Sigmoid()
+        query=query.unsqueeze(1).repeat(1,class_num*shot,1,1).view(batch*class_num*shot,1,-1)
+        output=net(query,support)
         if shot>1:
-            output=m(net(distance)).view(batch,shot,class_num,-1)
+            output=output.view(batch,shot,class_num,-1)
             output=output.sum(dim=1).squeeze(-1)
         else:
-            output=m(net(distance)).view(-1,class_num)
+            output=output.view(-1,class_num)
         output_list.append(output.data.cpu().numpy())
         labels_list.append(labels.data.cpu().numpy())
     y_trues = np.vstack(labels_list)
@@ -237,8 +226,9 @@ def train_relation(arg,name):
         data_path_1=Path("./data",name,"train","data",name+"1.npy")
         data_path_2=Path("./data",name,"train","data",name+"2.npy")
         label_path=Path("./data",name,"train","label",name+".npy")
-        arg.transform_model_path=Path("./models",name,arg.transform_model_name+".pth")
-        arg.encoder_model_path=Path("./models",name,arg.encoder_model_name+".pth")
+        # arg.transform_model_path=Path("./models",name,arg.transform_model_name+".pth")
+        # arg.encoder_model_path=Path("./models",name,arg.encoder_model_name+".pth")
+        arg.encoder_model_path=Path("./models",name,"SiameseNetwork"+".pth")
         arg.result_path=Path("./result",name)
         train_dataset=ECGDataset_pair(data_path_1,data_path_2,label_path)
         train_loader = DataLoader(train_dataset, batch_size=arg.batch_size, shuffle=True, num_workers=arg.num_workers, pin_memory=True)
@@ -252,33 +242,36 @@ def train_relation(arg,name):
         else:
             device = 'cpu'
         print(device)
-        if arg.transform_model_name=="fully-connected":
-            print("Train on:",arg.transform_model_name)
-            net =transform_fully().to(device)
-        if arg.encoder_model_name=="Sembed":
-            print("Output on:",arg.encoder_model_name)
-            encoder_net =Sembedencoder().to(device)  
-        summary(net,(1,))
-        summary(encoder_net,(1,259))
+        # if arg.transform_model_name=="fully-connected":
+        #     print("Train on:",arg.transform_model_name)
+        #     net =transform_fully().to(device)
+        # if arg.encoder_model_name=="Sembed":
+        #     print("Output on:",arg.encoder_model_name)
+        #     encoder_net =Sembedencoder().to(device)  
+        print("Output on:","SiameseNetwork")
+        net =SiameseNetwork().to(device)  
+        summary(net,[(1,259),(1,259)])
         optimizer = torch.optim.Adam(net.parameters(), lr=arg.lr)
         # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10, gamma=0.1)
         criterion = nn.BCELoss()
         print("train")
         if arg.resume:
-            net.load_state_dict(torch.load(arg.transform_model_path,map_location=device))
-            encoder_net.load_state_dict(torch.load(arg.encoder_model_path, map_location=device))
+            # net.load_state_dict(torch.load(arg.transform_model_path,map_location=device))
+            # encoder_net.load_state_dict(torch.load(arg.encoder_model_path, map_location=device))
+            net.load_state_dict(torch.load(arg.encoder_model_path,map_location=device))
         train_loss=[]
         for epoch in range(arg.epochs):
-            train_loss.append(train(train_loader,encoder_net, net, arg, criterion, epoch, optimizer, device))
-        np.save(arg.result_path+"train_loss.npy",train_loss)
+            train_loss.append(train(train_loader, net, arg, criterion, epoch, optimizer, device))
+        np.save(str(arg.result_path)+"train_loss.npy",train_loss)
     else:
         shots=[1,5]
         for shot in shots:
             support_path=Path("./data",name,"test","data",name+"_support_"+str(shot)+"_shot.npy")
             query_path=Path("./data",name,"test","data",name+"_query_"+str(shot)+"_shot.npy")
             label_path=Path("./data",name,"test","label",name+"_"+str(shot)+"_shot.npy")
-            arg.transform_model_path=Path("./models",name,arg.transform_model_name+".pth")
-            arg.encoder_model_path=Path("./models",name,arg.encoder_model_name+".pth")
+            # arg.transform_model_path=Path("./models",name,arg.transform_model_name+".pth")
+            # arg.encoder_model_path=Path("./models",name,arg.encoder_model_name+".pth")
+            arg.encoder_model_path=Path("./models",name,"SiameseNetwork"+".pth")
             arg.result_path=Path("./result",name)
             test_dataset=ECGDataset_few_shot(support_path,query_path,label_path)
             test_loader = DataLoader(test_dataset, batch_size=arg.batch_size, shuffle=True, num_workers=arg.num_workers, pin_memory=True)
@@ -288,17 +281,20 @@ def train_relation(arg,name):
                 device = 'cpu'
             print(device)
 
-            if arg.transform_model_name=="fully-connected":
-                print("Train on:",arg.transform_model_name)
-                net =transform_fully().to(device)
-            if arg.encoder_model_name=="Sembed":
-                print("Output on:",arg.encoder_model_name)
-                encoder_net =Sembedencoder().to(device)  
-            summary(net,(1,))
-            summary(encoder_net,(1,259))
-            net.load_state_dict(torch.load(arg.transform_model_path,map_location=device))
-            encoder_net.load_state_dict(torch.load(arg.encoder_model_path, map_location=device))
-            y_true,y_score=evaluation(test_loader,encoder_net,net,arg,shot,device)
+            # if arg.transform_model_name=="fully-connected":
+            #     print("Train on:",arg.transform_model_name)
+            #     net =transform_fully().to(device)
+            # if arg.encoder_model_name=="Sembed":
+            #     print("Output on:",arg.encoder_model_name)
+            #     encoder_net =Sembedencoder().to(device)  
+            print("Output on:","SiameseNetwork")
+            net =SiameseNetwork().to(device)  
+            summary(net,[(1,259),(1,259)])
+           
+            summary(net,(1,259))
+            # net.load_state_dict(torch.load(arg.transform_model_path,map_location=device))
+            net.load_state_dict(torch.load(arg.encoder_model_path, map_location=device))
+            y_true,y_score=evaluation(test_loader,net,arg,shot,device)
             result_path=Path(arg.result_path,arg.encoder_model_name)
             save_result(y_true,y_score,result_path,shot)
         
@@ -313,7 +309,8 @@ if __name__=="__main__":
     arg = ar.parse_args()
     data_dir = os.path.normpath(arg.data_dir)
     database = os.path.basename(data_dir)
-    dataset=[50,90]
+    # dataset=[10,50,90,150,500]
+    dataset=[10]
     print(arg.data_dir)
     print("Train on:",arg.encoder_model_name)
     print("Train on:",arg.transform_model_name)
