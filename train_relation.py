@@ -346,6 +346,7 @@ if __name__=="__main__":
     print(arg.data_dir)
     print("Train on:",arg.encoder_model_name)
     print("Train on:",arg.transform_model_name)
+    train_on_dataset(arg,dataset)
     arg.phase="test"
     train_on_dataset(arg,dataset)
 
