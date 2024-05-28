@@ -211,10 +211,12 @@ def evaluation(dataloader,net,arg,criterion,shot,device):
             output=output.view(batch,shot,class_num,-1)
             output=output.sum(dim=1).squeeze(-1)
             print(output.shape)
+            print(labels.shape)
         else:
             output=output.view(-1,class_num)
-        loss = criterion(output, labels)
-        running_loss += loss.item()
+        if shot==1:   
+            loss = criterion(output, labels)
+            running_loss += loss.item()
         output_list.append(output.data.cpu().numpy())
         labels_list.append(labels.data.cpu().numpy())
     loss_total=running_loss/(len(dataloader))
@@ -323,10 +325,10 @@ def train_relation(arg,name):
             print("Output on:","SiameseNetwork")
             net =SiameseNetwork().to(device)  
             summary(net,[(1,259),(1,259)])
-           
+            criterion=nn.BCELoss()
             # net.load_state_dict(torch.load(arg.transform_model_path,map_location=device))
             net.load_state_dict(torch.load(arg.encoder_model_path, map_location=device))
-            y_true,y_score,_,_=evaluation(test_loader,net,arg,nn.BCELoss(),shot,device)
+            y_true,y_score,_,_=evaluation(test_loader,net,arg,criterion,shot,device)
             result_path=Path(arg.result_path,arg.encoder_model_name)
             save_result(y_true,y_score,result_path,shot)
         
@@ -341,7 +343,7 @@ if __name__=="__main__":
     arg = ar.parse_args()
     data_dir = os.path.normpath(arg.data_dir)
     database = os.path.basename(data_dir)
-    dataset=[150]
+    dataset=[1]
     print(arg.data_dir)
     print("Train on:",arg.encoder_model_name)
     print("Train on:",arg.transform_model_name)
