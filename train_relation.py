@@ -171,6 +171,7 @@ from torchsummary import summary
 
 def train(dataloader, net, arg, criterion, epoch, optimizer, device):
     print('Training epoch %d:' % epoch)
+    flag=False
     net.train()
     # encoder_net.train()
     running_loss = 0
@@ -193,11 +194,19 @@ def train(dataloader, net, arg, criterion, epoch, optimizer, device):
     # y_scores = np.vstack(output_list)
     # torch.save(encoder_net.state_dict(), arg.encoder_model_path)   
     # print("Macro Precision: %.3f, Macro Recall: %.3f, Macro F1 score: %.3f, Macro AUC: %.3f, with threshold: %.3f" % cal_scores(y_trues,y_scores))
-    return loss_total
+    if loss_total<arg.best_metric:
+        arg.best_metric=loss_total
+        arg.patience = 100
+        torch.save(net.state_dict(), arg.encoder_model_path)
+        print("Saved")
+    else:
+        arg.patience -= 1
+        if arg.patience == 0:
+            flag=True
+    return loss_total,flag
 
 def evaluation(dataloader,net,arg,criterion,shot,device):
     net.eval()
-    flag=False
     running_loss = 0
     output_list, labels_list = [], []
     for _, (support,query,labels) in enumerate(tqdm(dataloader)):
@@ -224,18 +233,9 @@ def evaluation(dataloader,net,arg,criterion,shot,device):
     if arg.phase=="Train":
         acc_val=cal_acc(y_trues,y_scores)
         print(acc_val)
-        if loss_total<arg.best_metric:
-            arg.best_metric=loss_total
-            arg.patience = 100
-            torch.save(net.state_dict(), arg.encoder_model_path)
-            print("Saved")
-        else:
-            arg.patience -= 1
-            if arg.patience == 0:
-                flag=True
         
 
-    return y_trues,y_scores,loss_total,flag
+    return y_trues,y_scores,loss_total
 
 
 
@@ -289,8 +289,9 @@ def train_relation(arg,name):
         arg.patience=100
         shot=1
         for epoch in range(arg.epochs):
-            train_loss.append(train(train_loader, net, arg, criterion, epoch, optimizer, device))
-            _,_,val_loss_temp,flag=evaluation(val_loader,net,arg,criterion,shot,device)
+            train_loss_temp,flag=train(train_loader, net, arg, criterion, epoch, optimizer, device)
+            train_loss.append(train_loss_temp)
+            _,_,val_loss_temp=evaluation(val_loader,net,arg,criterion,shot,device)
             val_loss.append(val_loss_temp)
             if flag:
                 break
