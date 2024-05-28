@@ -17,6 +17,6 @@ def parse_args():
     parser.add_argument('--result_path', type=str, default="./result", help="Result saving dir")
     parser.add_argument('--epochs', type=int, default=2500, help="How many epochs to train")
     parser.add_argument('--resume', type=bool, default=False, help="Retrain or not")
-    parser.add_argument('--best_metric', type=float, default=0.0, help="Best performance of validation set")
+    parser.add_argument('--best_metric', type=float, default=100.0, help="Best performance of validation set")
     parser.add_argument('--patience', type=int, default=100, help="How many epoch the model stop getting better")
     return parser.parse_args()

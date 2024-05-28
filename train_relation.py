@@ -224,8 +224,8 @@ def evaluation(dataloader,net,arg,criterion,shot,device):
     if arg.phase=="Train":
         acc_val=cal_acc(y_trues,y_scores)
         print(acc_val)
-        if acc_val>arg.best_metric:
-            arg.best_metric=acc_val
+        if loss_total<arg.best_metric:
+            arg.best_metric=loss_total
             arg.patience = 100
             torch.save(net.state_dict(), arg.encoder_model_path)
             print("Saved")
@@ -285,7 +285,7 @@ def train_relation(arg,name):
             net.load_state_dict(torch.load(arg.encoder_model_path,map_location=device))
         train_loss=[]
         val_loss=[]
-        arg.best_metric=0.0
+        arg.best_metric=100.0
         arg.patience=100
         shot=1
         for epoch in range(arg.epochs):
@@ -294,8 +294,8 @@ def train_relation(arg,name):
             val_loss.append(val_loss_temp)
             if flag:
                 break
-        np.save(str(arg.result_path)+str(arg.encoder_model_name)+"/train_loss.npy",train_loss)
-        np.save(str(arg.result_path)+str(arg.encoder_model_name)+"/val_loss.npy",val_loss)
+        np.save(str(arg.result_path)+"/SiameseNetwork_train_loss.npy",train_loss)
+        np.save(str(arg.result_path)+"/SiameseNetwork_val_loss.npy",val_loss)
     else:
         shots=[1,5]
         for shot in shots:
@@ -341,7 +341,7 @@ if __name__=="__main__":
     arg = ar.parse_args()
     data_dir = os.path.normpath(arg.data_dir)
     database = os.path.basename(data_dir)
-    dataset=[1]
+    dataset=[150]
     print(arg.data_dir)
     print("Train on:",arg.encoder_model_name)
     print("Train on:",arg.transform_model_name)
