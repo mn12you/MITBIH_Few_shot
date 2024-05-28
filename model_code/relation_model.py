@@ -28,28 +28,23 @@ class Sembedencoder(nn.Sequential):
 
     def __init__(self,input_channels=1):
         layer_temp=[]
-        layer_temp.append(nn.Conv1d(input_channels, out_channels=64,kernel_size=10,
-                                        stride=1, padding=0))
+        layer_temp.append(nn.Conv1d(input_channels, out_channels=6,kernel_size=3,
+                                        stride=1, padding=1))
         layer_temp.append(nn.ReLU())
         layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
 
-        layer_temp.append(nn.Conv1d(64, out_channels=128,kernel_size=7,
-                                        stride=1, padding=0))
+        layer_temp.append(nn.Conv1d(6, out_channels=12,kernel_size=3,
+                                        stride=1, padding=1))
         layer_temp.append(nn.ReLU())
         layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
 
-        layer_temp.append(nn.Conv1d(128, out_channels=128,kernel_size=4,
-                                        stride=1, padding=0))
-        layer_temp.append(nn.ReLU())
-        layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
-
-        layer_temp.append(nn.Conv1d(128, out_channels=256,kernel_size=4,
-                                        stride=1, padding=0))
+        layer_temp.append(nn.Conv1d(12, out_channels=12,kernel_size=3,
+                                        stride=1, padding=1))
         layer_temp.append(nn.ReLU())
         layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
 
         layer_temp.append(nn.Flatten())
-        layer_temp.append(nn.Linear(in_features=3072,out_features=2048))
+        layer_temp.append(nn.Linear(in_features=384,out_features=16))
         # for i in range(2):
         #     if i >0:
         #         input_channels=inplanes
@@ -78,28 +73,23 @@ class SiameseNetwork(nn.Module):
     def __init__(self):
         super(SiameseNetwork, self).__init__()
         layer_temp=[]
-        layer_temp.append(nn.Conv1d(1, out_channels=64,kernel_size=10,
-                                        stride=1, padding=0))
+        layer_temp.append(nn.Conv1d(1, out_channels=6,kernel_size=3,
+                                        stride=1, padding=1))
         layer_temp.append(nn.ReLU())
         layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
 
-        layer_temp.append(nn.Conv1d(64, out_channels=128,kernel_size=7,
-                                        stride=1, padding=0))
+        layer_temp.append(nn.Conv1d(6, out_channels=12,kernel_size=3,
+                                        stride=1, padding=1))
         layer_temp.append(nn.ReLU())
         layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
 
-        layer_temp.append(nn.Conv1d(128, out_channels=128,kernel_size=4,
-                                        stride=1, padding=0))
-        layer_temp.append(nn.ReLU())
-        layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
-
-        layer_temp.append(nn.Conv1d(128, out_channels=256,kernel_size=4,
-                                        stride=1, padding=0))
+        layer_temp.append(nn.Conv1d(12, out_channels=12,kernel_size=3,
+                                        stride=1, padding=1))
         layer_temp.append(nn.ReLU())
         layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
 
         layer_temp.append(nn.Flatten())
-        layer_temp.append(nn.Linear(in_features=3072,out_features=2048))
+        layer_temp.append(nn.Linear(in_features=384,out_features=16))
 
         self.encoder = torch.nn.Sequential(*layer_temp)
 

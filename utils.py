@@ -51,6 +51,10 @@ def confution_matrixs(y_trues,y_preds):
     cm=multilabel_confusion_matrix(y_trues, y_preds)
     return cm
 
+def cal_acc(y_true, y_score):
+    y_pred=apply_class(y_score)
+    acc=accuracy_score(y_true, y_pred)
+    return acc
 
 def cal_f1(y_true, y_score):
     y_pred=apply_class(y_score)
