@@ -23,7 +23,7 @@ class RelationNet(nn.Sequential):
         super().__init__(*layer_temp)
     
 
-class Sembedencoder(nn.Sequential):
+class SembedNet(nn.Sequential):
    
 
     def __init__(self,input_channels=1):
@@ -45,6 +45,8 @@ class Sembedencoder(nn.Sequential):
 
         layer_temp.append(nn.Flatten())
         layer_temp.append(nn.Linear(in_features=384,out_features=16))
+        layer_temp.append(nn.Linear(in_features=16,out_features=5))
+        layer_temp.append(nn.Softmax(dim=1))
         # for i in range(2):
         #     if i >0:
         #         input_channels=inplanes

@@ -13,8 +13,8 @@ from pathlib import Path
 
 from tqdm import tqdm
 import numpy as np
-from model_code.relation_model import transform_fully,SiameseNetwork
-from data_mod.dataset import ECGDataset_pair, ECGDataset_few_shot
+from model_code.relation_model import transform_fully,SiameseNetwork,SembedNet
+from data_mod.dataset import ECGDataset_pair, ECGDataset_few_shot, ECGDataset_all
 # from dataset_alldata import ECGDataset_IE
 from utils import *
 from sklearn.metrics import confusion_matrix
@@ -175,10 +175,10 @@ def train(dataloader, net, arg, criterion, epoch, optimizer, device):
     # encoder_net.train()
     running_loss = 0
     output_list, labels_list = [], []
-    for _, (data1,data2,labels) in enumerate(tqdm(dataloader)):
-        data1,data2,labels= data1.float().to(device), data2.float().to(device), labels.float().to(device)
+    for _, (data,labels) in enumerate(tqdm(dataloader)):
+        data,labels= data.float().to(device), labels.float().to(device)
         optimizer.zero_grad()
-        output=net(data1,data2)
+        output=net(data)
         loss = criterion(output, labels)
         loss.backward()
         optimizer.step()
@@ -195,26 +195,16 @@ def train(dataloader, net, arg, criterion, epoch, optimizer, device):
     # print("Macro Precision: %.3f, Macro Recall: %.3f, Macro F1 score: %.3f, Macro AUC: %.3f, with threshold: %.3f" % cal_scores(y_trues,y_scores))
     return loss_total
 
-def evaluation(dataloader,net,arg,criterion,shot,device):
+def evaluation(dataloader,net,arg,criterion,device):
     net.eval()
     flag=False
     running_loss = 0
     output_list, labels_list = [], []
-    for _, (support,query,labels) in enumerate(tqdm(dataloader)):
-        support,query,labels= support.float().to(device), query.float().to(device), labels.float().to(device)
-        batch=labels.shape[0]
-        class_num=labels.shape[-1]
-        support=support.view(batch*class_num*shot,-1).unsqueeze(1)
-        query=query.unsqueeze(1).repeat(1,class_num*shot,1,1).view(batch*class_num*shot,1,-1)
-        output=net(query,support)
-        if shot>1:
-            output=output.view(batch,shot,class_num,-1)
-            output=output.sum(dim=1).squeeze(-1)
-        else:
-            output=output.view(-1,class_num)
-        if shot==1:   
-            loss = criterion(output, labels)
-            running_loss += loss.item()
+    for _, (data,labels) in enumerate(tqdm(dataloader)):
+        data,labels= data.float().to(device), labels.float().to(device)
+        output=net(data)
+        loss = criterion(output, labels)
+        running_loss += loss.item()
         output_list.append(output.data.cpu().numpy())
         labels_list.append(labels.data.cpu().numpy())
     loss_total=running_loss/(len(dataloader))
@@ -240,21 +230,17 @@ def evaluation(dataloader,net,arg,criterion,shot,device):
 
 
 
-def train_relation(arg,name):
+def train_CNN(arg,name):
     if arg.phase=="Train":
-        data_path_1=Path("./data",name,"train","data",name+"1.npy")
-        data_path_2=Path("./data",name,"train","data",name+"2.npy")
-        label_path=Path("./data",name,"train","label",name+".npy")
-        support_path=Path("./data",name,"val","data",name+"_support_1_shot.npy")
-        query_path=Path("./data",name,"val","data",name+"_query_1_shot.npy")
-        label_val_path=Path("./data",name,"val","label",name+"_1_shot.npy")
-        # arg.transform_model_path=Path("./models",name,arg.transform_model_name+".pth")
-        # arg.encoder_model_path=Path("./models",name,arg.encoder_model_name+".pth")
-        arg.encoder_model_path=Path("./models",name,"SiameseNetwork"+".pth")
+        train_data_path=Path("./data",name,"train","data",name+".npy")
+        train_label_path=Path("./data",name,"train","label",name+".npy")
+        val_data_path=Path("./data",name,"val","data",name+".npy")
+        val_label_path=Path("./data",name,"val","label",name+".npy")
+        arg.encoder_model_path=Path("./models",name,"Sembed"+".pth")
         arg.result_path=Path("./result",name)
-        train_dataset=ECGDataset_pair(data_path_1,data_path_2,label_path)
+        train_dataset=ECGDataset_all(train_data_path,train_label_path)
         train_loader = DataLoader(train_dataset, batch_size=arg.batch_size, shuffle=True, num_workers=arg.num_workers, pin_memory=True)
-        val_dataset=ECGDataset_few_shot(support_path,query_path,label_val_path)
+        val_dataset=ECGDataset_all(val_data_path,val_label_path)
         val_loader = DataLoader(val_dataset, batch_size=arg.batch_size, shuffle=False, num_workers=arg.num_workers, pin_memory=True)
         seed = arg.seed
         torch.manual_seed(seed)
@@ -273,11 +259,11 @@ def train_relation(arg,name):
         #     print("Output on:",arg.encoder_model_name)
         #     encoder_net =Sembedencoder().to(device)  
         print("Output on:","SiameseNetwork")
-        net =SiameseNetwork().to(device)  
-        summary(net,[(1,259),(1,259)])
+        net =SembedNet().to(device)  
+        summary(net,(1,259))
         optimizer = torch.optim.Adam(net.parameters(), lr=arg.lr)
         # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10, gamma=0.1)
-        criterion = nn.BCELoss()
+        criterion = nn.CrossEntropyLoss()
         print("train")
         if arg.resume:
             # net.load_state_dict(torch.load(arg.transform_model_path,map_location=device))
@@ -287,32 +273,28 @@ def train_relation(arg,name):
         val_loss=[]
         arg.best_metric=100.0
         arg.patience=100
-        shot=1
         for epoch in range(arg.epochs):
             train_loss.append(train(train_loader, net, arg, criterion, epoch, optimizer, device))
-            _,_,val_loss_temp,flag=evaluation(val_loader,net,arg,criterion,shot,device)
+            _,_,val_loss_temp,flag=evaluation(val_loader,net,arg,criterion,device)
             val_loss.append(val_loss_temp)
             if flag:
                 break
-        np.save(str(arg.result_path)+"/SiameseNetwork_train_loss.npy",train_loss)
-        np.save(str(arg.result_path)+"/SiameseNetwork_val_loss.npy",val_loss)
+        np.save(str(arg.result_path)+"/Sembed_train_loss.npy",train_loss)
+        np.save(str(arg.result_path)+"/Sembed_val_loss.npy",val_loss)
     else:
-        shots=[1,5]
-        for shot in shots:
-            support_path=Path("./data",name,"test","data",name+"_support_"+str(shot)+"_shot.npy")
-            query_path=Path("./data",name,"test","data",name+"_query_"+str(shot)+"_shot.npy")
-            label_path=Path("./data",name,"test","label",name+"_"+str(shot)+"_shot.npy")
-            # arg.transform_model_path=Path("./models",name,arg.transform_model_name+".pth")
-            # arg.encoder_model_path=Path("./models",name,arg.encoder_model_name+".pth")
-            arg.encoder_model_path=Path("./models",name,"SiameseNetwork"+".pth")
-            arg.result_path=Path("./result",name)
-            test_dataset=ECGDataset_few_shot(support_path,query_path,label_path)
-            test_loader = DataLoader(test_dataset, batch_size=arg.batch_size, shuffle=False, num_workers=arg.num_workers, pin_memory=True)
-            if arg.use_gpu and torch.cuda.is_available():
-                device = torch.device('cuda:0')
-            else:
-                device = 'cpu'
-            print(device)
+        test_data_path=Path("./data",name,"test","data",name+".npy")
+        test_label_path=Path("./data",name,"test","label",name+".npy")
+        # arg.transform_model_path=Path("./models",name,arg.transform_model_name+".pth")
+        # arg.encoder_model_path=Path("./models",name,arg.encoder_model_name+".pth")
+        arg.encoder_model_path=Path("./models",name,"Sembed"+".pth")
+        arg.result_path=Path("./result",name)
+        test_dataset=ECGDataset_all(test_data_path,test_label_path)
+        test_loader = DataLoader(test_dataset, batch_size=arg.batch_size, shuffle=False, num_workers=arg.num_workers, pin_memory=True)
+        if arg.use_gpu and torch.cuda.is_available():
+            device = torch.device('cuda:0')
+        else:
+            device = 'cpu'
+        print(device)
 
             # if arg.transform_model_name=="fully-connected":
             #     print("Train on:",arg.transform_model_name)
@@ -320,31 +302,32 @@ def train_relation(arg,name):
             # if arg.encoder_model_name=="Sembed":
             #     print("Output on:",arg.encoder_model_name)
             #     encoder_net =Sembedencoder().to(device)  
-            print("Output on:","SiameseNetwork")
-            net =SiameseNetwork().to(device)  
-            summary(net,[(1,259),(1,259)])
-            criterion=nn.BCELoss()
-            # net.load_state_dict(torch.load(arg.transform_model_path,map_location=device))
-            net.load_state_dict(torch.load(arg.encoder_model_path, map_location=device))
-            y_true,y_score,_,_=evaluation(test_loader,net,arg,criterion,shot,device)
-            result_path=Path(arg.result_path,arg.encoder_model_name)
-            save_result(y_true,y_score,result_path,shot)
+        print("Output on:","Sembed")
+        net =SembedNet().to(device)  
+        summary(net,(1,259))
+        criterion=nn.CrossEntropyLoss()
+        # net.load_state_dict(torch.load(arg.transform_model_path,map_location=device))
+        net.load_state_dict(torch.load(arg.encoder_model_path, map_location=device))
+        y_true,y_score,_,_=evaluation(test_loader,net,arg,criterion,device)
+        result_path=Path(arg.result_path,arg.encoder_model_name)
+        save_result(y_true,y_score,result_path,1)
         
 
 def train_on_dataset(arg,dataset):
     for dataset_num in dataset:
         if arg.data_dir=="./mit_bih":
-            name="mitbih_"+str(dataset_num)+"_pair"
-            train_relation(arg,name)
+            name="mitbih_"+str(dataset_num)
+            train_CNN(arg,name)
 
 if __name__=="__main__":
     arg = ar.parse_args()
     data_dir = os.path.normpath(arg.data_dir)
     database = os.path.basename(data_dir)
-    dataset=[30,90]
+    dataset=[1,5]
     print(arg.data_dir)
     print("Train on:",arg.encoder_model_name)
-    print("Train on:",arg.transform_model_name)
+    train_on_dataset(arg,dataset)
     arg.phase="test"
     train_on_dataset(arg,dataset)
+
 
