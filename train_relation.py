@@ -327,7 +327,7 @@ def train_relation(arg,name):
             criterion=nn.BCELoss()
             # net.load_state_dict(torch.load(arg.transform_model_path,map_location=device))
             net.load_state_dict(torch.load(arg.encoder_model_path, map_location=device))
-            y_true,y_score,_,_=evaluation(test_loader,net,arg,criterion,shot,device)
+            y_true,y_score,_=evaluation(test_loader,net,arg,criterion,shot,device)
             result_path=Path(arg.result_path,arg.encoder_model_name)
             save_result(y_true,y_score,result_path,shot)
         
@@ -342,11 +342,10 @@ if __name__=="__main__":
     arg = ar.parse_args()
     data_dir = os.path.normpath(arg.data_dir)
     database = os.path.basename(data_dir)
-    dataset=[150]
+    dataset=[1,10]
     print(arg.data_dir)
     print("Train on:",arg.encoder_model_name)
     print("Train on:",arg.transform_model_name)
-    train_on_dataset(arg,dataset)
     arg.phase="test"
     train_on_dataset(arg,dataset)
 
