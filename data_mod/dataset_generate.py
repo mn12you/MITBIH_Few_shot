@@ -15,7 +15,7 @@ import random
 
 
 def folder_generate(name):
-    data_diff=["10","50","90","150","500"]
+    data_diff=["1","5","10","30","50","90","150"]
 
     for diff in data_diff:
         path=Path("./data",name+"_"+diff)
@@ -33,6 +33,12 @@ def folder_generate(name):
             test_path_sub.mkdir()
             test_path_sub=Path(test_path,"label")
             test_path_sub.mkdir()
+            val_path=Path(path,"val")
+            val_path.mkdir()
+            val_path_sub=Path(val_path,"data")
+            val_path_sub.mkdir()
+            val_path_sub=Path(val_path,"label")
+            val_path_sub.mkdir()
         else:
             print("Dir exit.")
         path=Path("./result",name+"_"+diff)
@@ -63,29 +69,40 @@ if __name__=="__main__":
     y_label=np.squeeze(y_label,axis=None)
     print(y_label.shape)
     print(y_data.shape)
-    data_diff=["150","500"]
+    X_train, X_test, y_train, y_test = train_test_split(y_data, y_label, test_size=0.1, random_state=arg.seed)
+    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=arg.seed)
+    data_diff=["1","5","10","30","50","90","150"]
     for diff in data_diff:
         base_path=path=Path("./data",basepath+"_"+diff)
         train_data_path=Path(base_path,"train","data",basepath+"_"+diff+".npy")
         train_label_path=Path(base_path,"train","label",basepath+"_"+diff+".npy")
+        val_data_path=Path(base_path,"val","data",basepath+"_"+diff+".npy")
+        val_label_path=Path(base_path,"val","label",basepath+"_"+diff+".npy")
         test_data_path=Path(base_path,"test","data",basepath+"_"+diff+".npy")
         test_label_path=Path(base_path,"test","label",basepath+"_"+diff+".npy")
         random_num=int(diff)
         train_data=[]
         train_label=[]
-        for class_num in range(y_label.shape[-1]):
-            c_index=frozenset(np.where(y_label[:,class_num]==1)[0].tolist())
+        for class_num in range(y_train.shape[-1]):
+            c_index=frozenset(np.where(y_train[:,class_num]==1)[0].tolist())
             shot_temp= random.sample(c_index, random_num)
             train_data=train_data+shot_temp
             train_label=train_label+shot_temp
-        data=y_data[train_data]
-        label=y_label[train_label]
+        data=X_train[train_data]
+        label=y_train[train_label]
         print(diff)
         print(data.shape)
         print(label.shape)
-        X_train, X_test, y_train, y_test = train_test_split(data, label, test_size=0.4, random_state=arg.seed)
-        np.save(train_data_path,X_train)
-        np.save(train_label_path,y_train)
+        np.save(train_data_path,data)
+        np.save(train_label_path,label)
+        print(diff)
+        print(X_val.shape)
+        print(y_val.shape)
+        np.save(val_data_path,X_val)
+        np.save(val_label_path,y_val)
+        print(diff)
+        print(X_test.shape)
+        print(y_test.shape)
         np.save(test_data_path,X_test)
         np.save(test_label_path,y_test)
             

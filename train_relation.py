@@ -191,13 +191,13 @@ def train(dataloader, net, arg, criterion, epoch, optimizer, device):
     print('Loss: %.4f' % loss_total)
     # y_trues = np.vstack(labels_list)
     # y_scores = np.vstack(output_list)
-    torch.save(net.state_dict(), arg.encoder_model_path)
     # torch.save(encoder_net.state_dict(), arg.encoder_model_path)   
     # print("Macro Precision: %.3f, Macro Recall: %.3f, Macro F1 score: %.3f, Macro AUC: %.3f, with threshold: %.3f" % cal_scores(y_trues,y_scores))
     return loss_total
 
-def evaluation(dataloader,net,arg,shot,device):
+def evaluation(dataloader,net,arg,criterion,shot,device):
     net.eval()
+    flag=False
     running_loss = 0
     output_list, labels_list = [], []
     for _, (support,query,labels) in enumerate(tqdm(dataloader)):
@@ -213,11 +213,29 @@ def evaluation(dataloader,net,arg,shot,device):
             print(output.shape)
         else:
             output=output.view(-1,class_num)
+        loss = criterion(output, labels)
+        running_loss += loss.item()
         output_list.append(output.data.cpu().numpy())
         labels_list.append(labels.data.cpu().numpy())
+    loss_total=running_loss/(len(dataloader))
     y_trues = np.vstack(labels_list)
     y_scores = np.vstack(output_list)
-    return y_trues,y_scores
+    
+    if arg.phase=="Train":
+        acc_val=cal_acc(y_trues,y_scores)
+        print(acc_val)
+        if acc_val>arg.best_metric:
+            arg.best_metric=acc_val
+            arg.patience = 100
+            torch.save(net.state_dict(), arg.encoder_model_path)
+            print("Saved")
+        else:
+            arg.patience -= 1
+            if arg.patience == 0:
+                flag=True
+        
+
+    return y_trues,y_scores,loss_total,flag
 
 
 
@@ -227,12 +245,17 @@ def train_relation(arg,name):
         data_path_1=Path("./data",name,"train","data",name+"1.npy")
         data_path_2=Path("./data",name,"train","data",name+"2.npy")
         label_path=Path("./data",name,"train","label",name+".npy")
+        support_path=Path("./data",name,"val","data",name+"_support_1_shot.npy")
+        query_path=Path("./data",name,"val","data",name+"_query_1_shot.npy")
+        label_val_path=Path("./data",name,"val","label",name+"_1_shot.npy")
         # arg.transform_model_path=Path("./models",name,arg.transform_model_name+".pth")
         # arg.encoder_model_path=Path("./models",name,arg.encoder_model_name+".pth")
         arg.encoder_model_path=Path("./models",name,"SiameseNetwork"+".pth")
         arg.result_path=Path("./result",name)
         train_dataset=ECGDataset_pair(data_path_1,data_path_2,label_path)
         train_loader = DataLoader(train_dataset, batch_size=arg.batch_size, shuffle=True, num_workers=arg.num_workers, pin_memory=True)
+        val_dataset=ECGDataset_few_shot(support_path,query_path,label_val_path)
+        val_loader = DataLoader(val_dataset, batch_size=arg.batch_size, shuffle=False, num_workers=arg.num_workers, pin_memory=True)
         seed = arg.seed
         torch.manual_seed(seed)
         if torch.cuda.is_available():
@@ -261,9 +284,18 @@ def train_relation(arg,name):
             # encoder_net.load_state_dict(torch.load(arg.encoder_model_path, map_location=device))
             net.load_state_dict(torch.load(arg.encoder_model_path,map_location=device))
         train_loss=[]
+        val_loss=[]
+        arg.best_metric=0.0
+        arg.patience=100
+        shot=1
         for epoch in range(arg.epochs):
             train_loss.append(train(train_loader, net, arg, criterion, epoch, optimizer, device))
-        np.save(str(arg.result_path)+"train_loss.npy",train_loss)
+            _,_,val_loss_temp,flag=evaluation(val_loader,net,arg,criterion,shot,device)
+            val_loss.append(val_loss_temp)
+            if flag:
+                break
+        np.save(str(arg.result_path)+str(arg.encoder_model_name)+"/train_loss.npy",train_loss)
+        np.save(str(arg.result_path)+str(arg.encoder_model_name)+"/val_loss.npy",val_loss)
     else:
         shots=[1,5]
         for shot in shots:
@@ -275,7 +307,7 @@ def train_relation(arg,name):
             arg.encoder_model_path=Path("./models",name,"SiameseNetwork"+".pth")
             arg.result_path=Path("./result",name)
             test_dataset=ECGDataset_few_shot(support_path,query_path,label_path)
-            test_loader = DataLoader(test_dataset, batch_size=arg.batch_size, shuffle=True, num_workers=arg.num_workers, pin_memory=True)
+            test_loader = DataLoader(test_dataset, batch_size=arg.batch_size, shuffle=False, num_workers=arg.num_workers, pin_memory=True)
             if arg.use_gpu and torch.cuda.is_available():
                 device = torch.device('cuda:0')
             else:
@@ -294,7 +326,7 @@ def train_relation(arg,name):
            
             # net.load_state_dict(torch.load(arg.transform_model_path,map_location=device))
             net.load_state_dict(torch.load(arg.encoder_model_path, map_location=device))
-            y_true,y_score=evaluation(test_loader,net,arg,shot,device)
+            y_true,y_score,_,_=evaluation(test_loader,net,arg,nn.BCELoss(),shot,device)
             result_path=Path(arg.result_path,arg.encoder_model_name)
             save_result(y_true,y_score,result_path,shot)
         
@@ -309,9 +341,10 @@ if __name__=="__main__":
     arg = ar.parse_args()
     data_dir = os.path.normpath(arg.data_dir)
     database = os.path.basename(data_dir)
-    # dataset=[10,50,90,150,500]
-    dataset=[10]
+    dataset=[1]
     print(arg.data_dir)
     print("Train on:",arg.encoder_model_name)
     print("Train on:",arg.transform_model_name)
+    train_on_dataset(arg,dataset)
+    arg.phase="test"
     train_on_dataset(arg,dataset)

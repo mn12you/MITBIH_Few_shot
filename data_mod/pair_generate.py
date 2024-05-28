@@ -15,7 +15,7 @@ import random
 from itertools import combinations
 
 def folder_generate(name):
-    data_diff=["10","50","90","150","500"]
+    data_diff=["1","5","10","30","50","90","150"]
 
     for diff in data_diff:
         path=Path("./data",name+"_"+diff+"_"+"pair")
@@ -33,6 +33,12 @@ def folder_generate(name):
             test_path_sub.mkdir()
             test_path_sub=Path(test_path,"label")
             test_path_sub.mkdir()
+            val_path=Path(path,"val")
+            val_path.mkdir()
+            val_path_sub=Path(val_path,"data")
+            val_path_sub.mkdir()
+            val_path_sub=Path(val_path,"label")
+            val_path_sub.mkdir()
         else:
             print("Dir exit.")
         path=Path("./result",name+"_"+diff)
@@ -60,7 +66,7 @@ if __name__=="__main__":
     # y_label=np.squeeze(y_label,axis=None)
     # print(y_label.shape)
     # print(y_data.shape)
-    data_diff=["10","50","90","150","500"]
+    data_diff=["1","5","10","30","50","90","150"]
     for diff in data_diff:
         base_path=path=Path("./data",basepath+"_"+diff)
         train_data_path=Path(base_path,"train","data",basepath+"_"+diff+".npy")
