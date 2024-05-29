@@ -309,7 +309,7 @@ def train_CNN(arg,name):
         criterion=nn.CrossEntropyLoss()
         # net.load_state_dict(torch.load(arg.transform_model_path,map_location=device))
         net.load_state_dict(torch.load(arg.encoder_model_path, map_location=device))
-        y_true,y_score,_,_=evaluation(test_loader,net,arg,criterion,device)
+        y_true,y_score,_=evaluation(test_loader,net,arg,criterion,device)
         result_path=Path(arg.result_path,arg.encoder_model_name)
         save_result(y_true,y_score,result_path,1)
         
