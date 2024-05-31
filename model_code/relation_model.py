@@ -58,6 +58,8 @@ class LMUEBCNet(nn.Sequential):
 
         layer_temp.append(nn.Flatten())
         layer_temp.append(nn.Linear(in_features=96,out_features=16))
+        layer_temp.append(nn.Linear(in_features=16,out_features=5))
+        layer_temp.append(nn.Softmax(dim=1))
         super().__init__(*layer_temp)
 
 
