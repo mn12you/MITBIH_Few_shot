@@ -73,10 +73,10 @@ def evaluation(dataloader,net,arg,criterion,shot,device):
             arg.patience = 100
             torch.save(net.state_dict(), arg.model_path)
             print("Saved")
-    else:
-        arg.patience -= 1
-        if arg.patience == 0:
-            flag=True
+        else:
+            arg.patience -= 1
+            if arg.patience == 0:
+                flag=True
         
 
     return y_trues,y_scores,loss_total,flag
@@ -147,8 +147,6 @@ def train_relation(arg,name):
             label_path=Path("./data",name,"test","label",name+"_"+str(shot)+"_shot.npy")
             test_dataset=ECGDataset_few_shot(support_path,query_path,label_path)
             test_loader = DataLoader(test_dataset, batch_size=arg.batch_size, shuffle=False, num_workers=arg.num_workers, pin_memory=True)
-
-            criterion=nn.BCELoss()
             net.load_state_dict(torch.load(arg.model_path, map_location=device))
             y_true,y_score,_,_=evaluation(test_loader,net,arg,criterion,shot,device)
             result_path=Path(arg.result_path,arg.model_name)
