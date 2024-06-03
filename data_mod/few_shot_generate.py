@@ -56,7 +56,7 @@ def few_shot(dataloader,support_path,query_path,label_path,shot):
             for boots in range(shot):
                 index_temp.append(random.sample(class_index[class_num], batch))
             support_temp.append(train_data[index_temp])
-        support_set_list.append(np.stack(support_temp,axis=1).reshape(batch,class_number*shot,-1))
+        support_set_list.append(np.stack(support_temp,axis=1).reshape(batch,class_number*shot,56,56))
     query_set_data = np.vstack(query_set_list)
     query_set_label = np.vstack(query_set_label_list)
     support_set = np.vstack(support_set_list)
@@ -88,6 +88,7 @@ if __name__=="__main__":
     # print(y_data.shape)
     data_diff=["1","5","10","30","50","90","150"]
     for diff in data_diff:
+        diff=diff+"_cwt"
         base_path=path=Path("./data",basepath+"_"+diff)
         test_data_path=Path(base_path,"test","data",basepath+"_"+diff+".npy")
         test_label_path=Path(base_path,"test","label",basepath+"_"+diff+".npy")

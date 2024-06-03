@@ -47,6 +47,29 @@ def folder_generate(name):
         else:
             print("Dir exit.")
 
+def cwt_data(dataloader,data_path,label_path):
+    output_list=[]
+    labels_list=[]
+    for _, (data, labels) in enumerate(tqdm(dataloader)):
+            output_list.append(data)
+            labels_list.append(labels)
+    y_data = np.vstack(output_list)
+    y_label = np.vstack(labels_list)
+    output_list=[]
+    for i in range(y_data.shape[0]):
+        data_np=y_data[i]
+        data=np.squeeze(data_np,axis=0)
+        output_list.append(np.expand_dims(tfa_morlet(data, 360, 4, 40, 0.643),axis=0))
+    y_data = np.vstack(output_list)
+    y_data=np.expand_dims(y_data,axis=1)
+
+    
+    print(diff)
+    print(y_data.shape)
+    print(y_label.shape)
+    np.save(data_path,y_data)
+    np.save(label_path,y_label)
+
 if __name__=="__main__":
     arg=parse_args()
     datadir=arg.data_dir
@@ -56,40 +79,29 @@ if __name__=="__main__":
     data_diff=["1","5","10","30","50","90","150"]
     for diff in data_diff:
         base_path=path=Path("./data",basepath+"_"+diff)
-        base_path_save=path=Path("./data",basepath+"_"+diff)
+        base_path_save=path=Path("./data",basepath+"_"+diff+"_cwt")
+        base_name=basepath+"_"+diff+"_cwt"
+
         train_data_path=Path(base_path,"train","data",basepath+"_"+diff+".npy")
         train_label_path=Path(base_path,"train","label",basepath+"_"+diff+".npy")
-        base_path=path=Path("./data",basepath+"_"+diff+"_"+"pair")
-        train_data_path_save_1=Path(base_path,"train","data",basepath+"_"+diff+"_"+"pair1"+".npy")
+        val_data_path=Path(base_path,"val","data",basepath+"_"+diff+".npy")
+        val_label_path=Path(base_path,"val","label",basepath+"_"+diff+".npy")
+        test_data_path=Path(base_path,"test","data",basepath+"_"+diff+".npy")
+        test_label_path=Path(base_path,"test","label",basepath+"_"+diff+".npy")
 
+        train_data_path_save=Path(base_path_save,"train","data",base_name+".npy")
+        train_label_path_save=Path(base_path_save,"train","label",base_name+".npy")
+        val_data_path_save=Path(base_path_save,"val","data",base_name+".npy")
+        val_label_path_save=Path(base_path_save,"val","label",base_name+".npy")
+        test_data_path_save=Path(base_path_save,"test","data",base_name+".npy")
+        test_label_path_save=Path(base_path_save,"test","label",base_name+".npy")
+       
+        train_dataset=ECGDataset_all(train_data_path,train_label_path)
         train_loader = DataLoader(train_dataset, batch_size=64, shuffle=False, num_workers=8)
-
-        output_list=[]
-        labels_list=[]
-        for _, (data, labels) in enumerate(tqdm(train_loader)):
-                output_list.append(data)
-                labels_list.append(labels)
-        y_data = np.vstack(output_list)
-        y_label = np.vstack(labels_list)
-
-        output_list_1=[]
-        output_list_2=[]
-        final_label_list=[]#1 the same; 0 different
-        for i, j in combinations(range(y_label.shape[0]), 2):
-            output_list_1.append(i)
-            output_list_2.append(j)
-            if np.argmax(y_label[i])==np.argmax(y_label[j]):
-                final_label_list.append(np.array([[1]]))
-            else:
-                final_label_list.append(np.array([[0]]))
-        y_label = np.vstack(final_label_list)
-        y_data1=y_data[output_list_1]
-        y_data2=y_data[output_list_2]
-        print(diff)
-        print(y_data1.shape)
-        print(y_data2.shape)
-        print(y_label.shape)
-
-        np.save(train_data_path_save_1,y_data1)
-        np.save(train_data_path_save_2,y_data2)
-        np.save(train_label_path_save,y_label)
+        val_dataset=ECGDataset_all(val_data_path,val_label_path)
+        val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False, num_workers=8)
+        test_dataset=ECGDataset_all(test_data_path,test_label_path)
+        test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False, num_workers=8)
+        cwt_data(train_loader,train_data_path_save,train_label_path_save)
+        cwt_data(val_loader,val_data_path_save,val_label_path_save)
+        cwt_data(test_loader,test_data_path_save,test_label_path_save)

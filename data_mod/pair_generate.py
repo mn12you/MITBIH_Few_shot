@@ -18,6 +18,7 @@ def folder_generate(name):
     data_diff=["1","5","10","30","50","90","150"]
 
     for diff in data_diff:
+        diff=diff+"_cwt"
         path=Path("./data",name+"_"+diff+"_"+"pair")
         if not path.exists():
             path.mkdir()
@@ -68,6 +69,7 @@ if __name__=="__main__":
     # print(y_data.shape)
     data_diff=["1","5","10","30","50","90","150"]
     for diff in data_diff:
+        diff=diff+"_cwt"
         base_path=path=Path("./data",basepath+"_"+diff)
         train_data_path=Path(base_path,"train","data",basepath+"_"+diff+".npy")
         train_label_path=Path(base_path,"train","label",basepath+"_"+diff+".npy")
