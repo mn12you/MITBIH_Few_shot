@@ -4,7 +4,9 @@ import time
 import scipy.signal
 from scipy.signal import convolve2d
 import matplotlib.pyplot as plt
-
+img_select = []
+for i in np.arange(0,258, 4.62):
+    img_select.append(int(round(i)))
 
 def conv2(x, y, mode='same'):
     return convolve2d(x, y, mode=mode)
@@ -41,7 +43,10 @@ def tfa_morlet(td, fs, fmin, fmax, fstep):
             cr = np.convolve(td, MW, 'same')
             cr = cr[(npad // 2 + 1): (len(cr)- (npad - npad // 2))]
         TFmap.append(abs(cr))
-    return TFmap
+    img=np.array(TFmap)
+    img = img[::-1,:]
+    img = img[:,img_select]
+    return img
 
 
 
