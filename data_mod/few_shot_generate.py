@@ -69,6 +69,8 @@ def few_shot(dataloader,support_path,query_path,label_path,shot):
 
 
 
+
+
     
 if __name__=="__main__":
     arg=parse_args()

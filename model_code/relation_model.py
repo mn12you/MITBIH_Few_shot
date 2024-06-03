@@ -170,7 +170,7 @@ class Siamese_LMU(nn.Module):
 class Siamese_Sembed_2D(nn.Module):
 
     def __init__(self):
-        super(Siamese_Sembed, self).__init__()
+        super(Siamese_Sembed_2D, self).__init__()
         layer_temp=[]
         layer_temp.append(nn.Conv2d(1, out_channels=6,kernel_size=3,
                                         stride=1, padding=1))
