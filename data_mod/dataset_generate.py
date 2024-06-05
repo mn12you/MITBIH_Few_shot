@@ -71,7 +71,7 @@ if __name__=="__main__":
     print(y_data.shape)
     X_train, X_test, y_train, y_test = train_test_split(y_data, y_label, test_size=0.1, random_state=arg.seed)
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=arg.seed)
-    data_diff=["1","5","10","30","50","90","150"]
+    data_diff=["1"]
     for diff in data_diff:
         base_path=path=Path("./data",basepath+"_"+diff)
         train_data_path=Path(base_path,"train","data",basepath+"_"+diff+".npy")

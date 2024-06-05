@@ -56,7 +56,7 @@ def few_shot(dataloader,support_path,query_path,label_path,shot):
             for boots in range(shot):
                 index_temp.append(random.sample(class_index[class_num], batch))
             support_temp.append(train_data[index_temp])
-        support_set_list.append(np.stack(support_temp,axis=1).reshape(batch,class_number*shot,56,56))
+        support_set_list.append(np.stack(support_temp,axis=1).reshape(batch,class_number*shot,-1))
     query_set_data = np.vstack(query_set_list)
     query_set_label = np.vstack(query_set_label_list)
     support_set = np.vstack(support_set_list)
@@ -90,12 +90,11 @@ if __name__=="__main__":
     # print(y_data.shape)
     data_diff=["1","5","10","30","50","90","150"]
     for diff in data_diff:
-        diff=diff+"_cwt"
         base_path=path=Path("./data",basepath+"_"+diff)
-        test_data_path=Path(base_path,"test","data",basepath+"_"+diff+".npy")
-        test_label_path=Path(base_path,"test","label",basepath+"_"+diff+".npy")
-        val_data_path=Path(base_path,"val","data",basepath+"_"+diff+".npy")
-        val_label_path=Path(base_path,"val","label",basepath+"_"+diff+".npy")
+        test_data_path=Path(base_path,"test","data",basepath+"_"+diff+"_spe.npy")
+        test_label_path=Path(base_path,"test","label",basepath+"_"+diff+"_spe.npy")
+        val_data_path=Path(base_path,"val","data",basepath+"_"+diff+"_spe.npy")
+        val_label_path=Path(base_path,"val","label",basepath+"_"+diff+"_spe.npy")
         train_data_path=Path(base_path,"train","data",basepath+"_"+diff+".npy")
         train_label_path=Path(base_path,"train","label",basepath+"_"+diff+".npy")
         base_path=path=Path("./data",basepath+"_"+diff+"_"+"pair")
@@ -121,12 +120,12 @@ if __name__=="__main__":
         shots=[1,5]
 
         for shot in shots:
-            val_data_path_support=Path(base_path,"val","data",basepath+"_"+diff+"_pair_"+"support_"+str(shot)+"_"+"shot.npy")
-            val_data_path_query=Path(base_path,"val","data",basepath+"_"+diff+"_pair_"+"query_"+str(shot)+"_"+"shot.npy")
-            val_label_path_save=Path(base_path,"val","label",basepath+"_"+diff+"_pair_"+str(shot)+"_"+"shot.npy")
-            test_data_path_support=Path(base_path,"test","data",basepath+"_"+diff+"_pair_"+"support_"+str(shot)+"_"+"shot.npy")
-            test_data_path_query=Path(base_path,"test","data",basepath+"_"+diff+"_pair_"+"query_"+str(shot)+"_"+"shot.npy")
-            test_label_path_save=Path(base_path,"test","label",basepath+"_"+diff+"_pair_"+str(shot)+"_"+"shot.npy")
+            val_data_path_support=Path(base_path,"val","data",basepath+"_"+diff+"_pair_"+"support_"+str(shot)+"_"+"shot_spe.npy")
+            val_data_path_query=Path(base_path,"val","data",basepath+"_"+diff+"_pair_"+"query_"+str(shot)+"_"+"shot_spe.npy")
+            val_label_path_save=Path(base_path,"val","label",basepath+"_"+diff+"_pair_"+str(shot)+"_"+"shot_spe.npy")
+            test_data_path_support=Path(base_path,"test","data",basepath+"_"+diff+"_pair_"+"support_"+str(shot)+"_"+"shot_spe.npy")
+            test_data_path_query=Path(base_path,"test","data",basepath+"_"+diff+"_pair_"+"query_"+str(shot)+"_"+"shot_spe.npy")
+            test_label_path_save=Path(base_path,"test","label",basepath+"_"+diff+"_pair_"+str(shot)+"_"+"shot_spe.npy")
 
             few_shot(val_loader,val_data_path_support,val_data_path_query,val_label_path_save,shot)
             few_shot(test_loader,test_data_path_support,test_data_path_query,test_label_path_save,shot)
