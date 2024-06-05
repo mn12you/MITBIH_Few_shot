@@ -86,7 +86,7 @@ def evaluation(dataloader,net,arg,criterion,shot,device):
 
 def train_relation(arg,name):
 
-    arg.model_path=Path("./models",name,arg.model_name+".pth")
+    arg.model_path=Path("./models",name,arg.model_name+"_"+arg.test_set+".pth")
     arg.result_path=Path("./result",name)
     seed = arg.seed
 
@@ -106,6 +106,8 @@ def train_relation(arg,name):
         net=Siamese_Sembed().to(device)
     elif arg.model_name=="Siamese_LMU":
         net=Siamese_LMU().to(device)
+    elif arg.model_name=="Siamese_CNN":
+        net=Siamese_CNN().to(device)
     summary(net,[(1,259),(1,259)])
 
 
@@ -113,9 +115,14 @@ def train_relation(arg,name):
         data_path_1=Path("./data",name,"train","data",name+"1.npy")
         data_path_2=Path("./data",name,"train","data",name+"2.npy")
         label_path=Path("./data",name,"train","label",name+".npy")
-        support_path=Path("./data",name,"val","data",name+"_support_1_shot.npy")
-        query_path=Path("./data",name,"val","data",name+"_query_1_shot.npy")
-        label_val_path=Path("./data",name,"val","label",name+"_1_shot.npy")
+        if arg.test_set=="spe":
+            support_path=Path("./data",name,"val","data",name+"_support_1_shot_spe.npy")
+            query_path=Path("./data",name,"val","data",name+"_query_1_shot_spe.npy")
+            label_val_path=Path("./data",name,"val","label",name+"_1_shot_spe.npy")
+        else:
+            support_path=Path("./data",name,"val","data",name+"_support_1_shot.npy")
+            query_path=Path("./data",name,"val","data",name+"_query_1_shot.npy")
+            label_val_path=Path("./data",name,"val","label",name+"_1_shot.npy")
         train_dataset=ECGDataset_pair(data_path_1,data_path_2,label_path)
         train_loader = DataLoader(train_dataset, batch_size=arg.batch_size, shuffle=True, num_workers=arg.num_workers, pin_memory=True)
         val_dataset=ECGDataset_few_shot(support_path,query_path,label_val_path)
@@ -137,20 +144,25 @@ def train_relation(arg,name):
             val_loss.append(val_loss_temp)
             if flag:
                 break
-        np.save(str(arg.result_path)+"/"+arg.model_name+"_train_loss.npy",train_loss)
-        np.save(str(arg.result_path)+"/"+arg.model_name+"_val_loss.npy",val_loss)
+        np.save(str(arg.result_path)+"/"+arg.model_name+"_train_loss_"+arg.test_set+".npy",train_loss)
+        np.save(str(arg.result_path)+"/"+arg.model_name+"_val_loss_"+arg.test_set+".npy",val_loss)
     else:
         shots=[1,5]
         for shot in shots:
-            support_path=Path("./data",name,"test","data",name+"_support_"+str(shot)+"_shot.npy")
-            query_path=Path("./data",name,"test","data",name+"_query_"+str(shot)+"_shot.npy")
-            label_path=Path("./data",name,"test","label",name+"_"+str(shot)+"_shot.npy")
+            if arg.test_set=="spe":
+                support_path=Path("./data",name,"test","data",name+"_support_"+str(shot)+"_shot_spe.npy")
+                query_path=Path("./data",name,"test","data",name+"_query_"+str(shot)+"_shot_spe.npy")
+                label_path=Path("./data",name,"test","label",name+"_"+str(shot)+"_shot_spe.npy")
+            else:
+                support_path=Path("./data",name,"test","data",name+"_support_"+str(shot)+"_shot.npy")
+                query_path=Path("./data",name,"test","data",name+"_query_"+str(shot)+"_shot.npy")
+                label_path=Path("./data",name,"test","label",name+"_"+str(shot)+"_shot.npy")
             test_dataset=ECGDataset_few_shot(support_path,query_path,label_path)
             test_loader = DataLoader(test_dataset, batch_size=arg.batch_size, shuffle=False, num_workers=arg.num_workers, pin_memory=True)
             criterion = nn.BCELoss()
             net.load_state_dict(torch.load(arg.model_path, map_location=device))
             y_true,y_score,_,_=evaluation(test_loader,net,arg,criterion,shot,device)
-            result_path=Path(arg.result_path,arg.model_name)
+            result_path=Path(arg.result_path,str(arg.model_name)+"_"+arg.test_set)
             save_result(y_true,y_score,result_path,shot)
         
 
@@ -164,7 +176,7 @@ if __name__=="__main__":
     arg = ar.parse_args()
     data_dir = os.path.normpath(arg.data_dir)
     database = os.path.basename(data_dir)
-    dataset=[30,50]
+    dataset=[5]
     print(arg.data_dir)
     print("Train on:",arg.model_name)
     train_on_dataset(arg,dataset)

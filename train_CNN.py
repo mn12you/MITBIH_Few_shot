@@ -76,7 +76,7 @@ def evaluation(dataloader,net,arg,criterion,device):
 
 def train_CNN(arg,name):
 
-    arg.model_path=Path("./models",name,arg.model_name+".pth")
+    arg.model_path=Path("./models",name,arg.model_name+"_"+arg.test_set+".pth")
     arg.result_path=Path("./result",name)
     seed = arg.seed
     torch.manual_seed(seed)
@@ -92,15 +92,22 @@ def train_CNN(arg,name):
         net=SembedNet().to(device)
     elif arg.model_name=="LMUEBCNet":
         net=LMUEBCNet().to(device)
+    elif arg.model_name=="CNN":
+        net=CNN().to(device)
     summary(net,(1,259))
 
     if arg.phase=="Train":
         train_data_path=Path("./data",name,"train","data",name+".npy")
         train_label_path=Path("./data",name,"train","label",name+".npy")
-        val_data_path=Path("./data",name,"val","data",name+".npy")
-        val_label_path=Path("./data",name,"val","label",name+".npy")
+        
         train_dataset=ECGDataset_all(train_data_path,train_label_path)
         train_loader = DataLoader(train_dataset, batch_size=arg.batch_size, shuffle=True, num_workers=arg.num_workers, pin_memory=True)
+        if arg.test_set=="spe":
+            val_data_path=Path("./data",name,"val","data",name+"_spe.npy")
+            val_label_path=Path("./data",name,"val","label",name+"_spe.npy")
+        else:
+            val_data_path=Path("./data",name,"val","data",name+".npy")
+            val_label_path=Path("./data",name,"val","label",name+".npy")
         val_dataset=ECGDataset_all(val_data_path,val_label_path)
         val_loader = DataLoader(val_dataset, batch_size=arg.batch_size, shuffle=False, num_workers=arg.num_workers, pin_memory=True)
         optimizer = torch.optim.Adam(net.parameters(), lr=arg.lr)
@@ -119,17 +126,21 @@ def train_CNN(arg,name):
             val_loss.append(val_loss_temp)
             if flag:
                 break
-        np.save(str(arg.result_path)+"/"+arg.model_name+"_train_loss.npy",train_loss)
-        np.save(str(arg.result_path)+"/"+arg.model_name+"_val_loss.npy",val_loss)
+        np.save(str(arg.result_path)+"/"+arg.model_name+"_train_loss_"+arg.test_set+".npy",train_loss)
+        np.save(str(arg.result_path)+"/"+arg.model_name+"_val_loss_"+arg.test_set+".npy",val_loss)
     else:
-        test_data_path=Path("./data",name,"test","data",name+".npy")
-        test_label_path=Path("./data",name,"test","label",name+".npy")
+        if arg.test_set=="spe":
+            test_data_path=Path("./data",name,"test","data",name+"_spe.npy")
+            test_label_path=Path("./data",name,"test","label",name+"_spe.npy")
+        else:
+            test_data_path=Path("./data",name,"test","data",name+".npy")
+            test_label_path=Path("./data",name,"test","label",name+".npy")
         test_dataset=ECGDataset_all(test_data_path,test_label_path)
         test_loader = DataLoader(test_dataset, batch_size=arg.batch_size, shuffle=False, num_workers=arg.num_workers, pin_memory=True)
         criterion=nn.CrossEntropyLoss()
         net.load_state_dict(torch.load(arg.model_path, map_location=device))
         y_true,y_score,_,_=evaluation(test_loader,net,arg,criterion,device)
-        result_path=Path(arg.result_path,arg.model_name)
+        result_path=Path(arg.result_path,str(arg.model_name)+"_"+arg.test_set)
         save_result(y_true,y_score,result_path,1)
         
 
@@ -143,7 +154,7 @@ if __name__=="__main__":
     arg = ar.parse_args()
     data_dir = os.path.normpath(arg.data_dir)
     database = os.path.basename(data_dir)
-    dataset=[1,5,10,30,50,90,150]
+    dataset=[5]
     print(arg.data_dir)
     print("Train on:",arg.model_name)
     train_on_dataset(arg,dataset)
