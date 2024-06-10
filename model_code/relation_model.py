@@ -47,7 +47,7 @@ class LMUEBCNet(nn.Sequential):
         layer_temp.append(nn.Conv1d(12, out_channels=12,kernel_size=3,
                                         stride=1, padding=1))
         layer_temp.append(nn.ReLU())
-        layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
+        # layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
 
         layer_temp.append(nn.Conv1d(12, out_channels=12,kernel_size=3,
                                         stride=1, padding=1))
@@ -57,7 +57,7 @@ class LMUEBCNet(nn.Sequential):
         layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
 
         layer_temp.append(nn.Flatten())
-        layer_temp.append(nn.Linear(in_features=96,out_features=16))
+        layer_temp.append(nn.Linear(in_features=384,out_features=16))
         layer_temp.append(nn.Linear(in_features=16,out_features=5))
         layer_temp.append(nn.Softmax(dim=1))
         super().__init__(*layer_temp)
@@ -112,7 +112,7 @@ class Siamese_LMU(nn.Module):
         super(Siamese_LMU, self).__init__()
         layer_temp=[]
         layer_temp.append(nn.Conv1d(1, out_channels=6,kernel_size=3,
-                                        stride=2, padding=1))
+                                        stride=1, padding=1))
         layer_temp.append(nn.ReLU())
         layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
 
@@ -126,7 +126,7 @@ class Siamese_LMU(nn.Module):
         layer_temp.append(nn.Conv1d(12, out_channels=12,kernel_size=3,
                                         stride=1, padding=1))
         layer_temp.append(nn.ReLU())
-        layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
+        # layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
 
         layer_temp.append(nn.Conv1d(12, out_channels=12,kernel_size=3,
                                         stride=1, padding=1))
@@ -136,7 +136,7 @@ class Siamese_LMU(nn.Module):
         layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
 
         layer_temp.append(nn.Flatten())
-        layer_temp.append(nn.Linear(in_features=96,out_features=16))
+        layer_temp.append(nn.Linear(in_features=384,out_features=16))
 
         self.encoder = torch.nn.Sequential(*layer_temp)
 
