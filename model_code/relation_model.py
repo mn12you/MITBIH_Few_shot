@@ -33,7 +33,7 @@ class LMUEBCNet(nn.Sequential):
     def __init__(self):
         layer_temp=[]
         layer_temp.append(nn.Conv1d(1, out_channels=6,kernel_size=3,
-                                        stride=2, padding=1))
+                                        stride=1, padding=1))
         layer_temp.append(nn.ReLU())
         layer_temp.append(nn.MaxPool1d(kernel_size=2, stride=2, padding=0))
 
