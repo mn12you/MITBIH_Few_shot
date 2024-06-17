@@ -15,7 +15,7 @@ arg=parse_args()
 data_record=Path(SCRIPT_DIR,arg.data_dir,'RECORDS')
 df=pd.DataFrame(columns=['ecg_id','patient_id','labels','filename'])
 
-#### filter settinh ####
+#### filter setting ####
 fs=360
 window_bond=int(fs*0.36)
 med_window=int(0.72*fs)

@@ -83,28 +83,31 @@ if __name__=="__main__":
     basepath="mitbih"
     random.seed(arg.seed)
     folder_generate(basepath)
-    data_diff=["1"]
-    for diff in data_diff:
+    data_diff=["1","5","10","30","50","90","150"]
+    
+    for folds in range(10):
 
-        base_path="./data/"+basepath+"_"+diff
+        for diff in data_diff:
 
-        test_data_path=Path(base_path,"test","data",basepath+"_"+diff+".npy")
-        test_label_path=Path(base_path,"test","label",basepath+"_"+diff+".npy")
-        val_data_path=Path(base_path,"val","data",basepath+"_"+diff+".npy")
-        val_label_path=Path(base_path,"val","label",basepath+"_"+diff+".npy")
-        test_dataset=ECGDataset_all(test_data_path,test_label_path)
-        test_loader = DataLoader(test_dataset, batch_size=32,shuffle=False, num_workers=4)
-        val_dataset=ECGDataset_all(val_data_path,val_label_path)
-        val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=4)
+            base_path="./data/"+basepath+"_"+diff
 
-        val_data_path_save=Path(base_path,"val","data",basepath+"_"+diff+"_spe.npy")
-        val_label_path_save=Path(base_path,"val","label",basepath+"_"+diff+"_spe.npy")
+            test_data_path=Path(base_path,"test","data",basepath+"_"+diff+"_fold"+str(folds)+".npy")
+            test_label_path=Path(base_path,"test","label",basepath+"_"+diff+"_fold"+str(folds)+".npy")
+            val_data_path=Path(base_path,"val","data",basepath+"_"+diff+"_fold"+str(folds)+".npy")
+            val_label_path=Path(base_path,"val","label",basepath+"_"+diff+"_fold"+str(folds)+".npy")
+            test_dataset=ECGDataset_all(test_data_path,test_label_path)
+            test_loader = DataLoader(test_dataset, batch_size=32,shuffle=False, num_workers=4)
+            val_dataset=ECGDataset_all(val_data_path,val_label_path)
+            val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=4)
 
-        test_data_path_save=Path(base_path,"test","data",basepath+"_"+diff+"_spe.npy")
-        test_label_path_save=Path(base_path,"test","label",basepath+"_"+diff+"_spe.npy")
+            val_data_path_save=Path(base_path,"val","data",basepath+"_"+diff+"_spe"+"_fold"+str(folds)+".npy")
+            val_label_path_save=Path(base_path,"val","label",basepath+"_"+diff+"_spe"+"_fold"+str(folds)+".npy")
 
-        data_gen(val_loader,val_data_path_save,val_label_path_save,rand_num=50)
-        data_gen(test_loader,test_data_path_save,test_label_path_save,rand_num=100)
+            test_data_path_save=Path(base_path,"test","data",basepath+"_"+diff+"_spe"+"_fold"+str(folds)+".npy")
+            test_label_path_save=Path(base_path,"test","label",basepath+"_"+diff+"_spe"+"_fold"+str(folds)+".npy")
+
+            data_gen(val_loader,val_data_path_save,val_label_path_save,rand_num=50)
+            data_gen(test_loader,test_data_path_save,test_label_path_save,rand_num=100)
 
 
             
