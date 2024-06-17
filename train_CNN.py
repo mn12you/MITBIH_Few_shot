@@ -157,10 +157,10 @@ if __name__=="__main__":
     dataset=[1,5,10,30,50,90,150]
     print(arg.data_dir)
     print("Train on:",arg.model_name)
-    train_on_dataset(arg,dataset)
-    arg.phase="test"
-    train_on_dataset(arg,dataset)
-    arg.phase="train"
+    # train_on_dataset(arg,dataset)
+    # arg.phase="test"
+    # train_on_dataset(arg,dataset)
+    arg.phase="Train"
     arg.test_set="spe"
     train_on_dataset(arg,dataset)
     arg.phase="test"
