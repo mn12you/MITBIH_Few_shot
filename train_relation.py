@@ -10,7 +10,7 @@ import pickle
 from itertools import product
 
 from pathlib import Path
-
+import time
 from tqdm import tqdm
 import numpy as np
 from model_code.relation_model import *
@@ -164,6 +164,88 @@ def train_relation(arg,name):
             y_true,y_score,_,_=evaluation(test_loader,net,arg,criterion,shot,device)
             result_path=Path(arg.result_path,str(arg.model_name)+"_"+arg.test_set)
             save_result(y_true,y_score,result_path,shot)
+
+
+def train_relation_10_fold(arg,name,folds):
+
+    arg.model_path=Path("./models",name,arg.model_name+"_"+arg.test_set+"_fold"+str(folds)+".pth")
+    arg.result_path=Path("./result",name)
+    seed = arg.seed
+
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+
+    if arg.use_gpu and torch.cuda.is_available():
+        device = torch.device('cuda:0')
+    else:
+        device = 'cpu'
+
+    print(device) 
+    print("Output on:",arg.model_name)
+    if arg.model_name=="Siamese_Sembed":
+        net=Siamese_Sembed().to(device)
+    elif arg.model_name=="Siamese_LMU":
+        net=Siamese_LMU().to(device)
+    elif arg.model_name=="Siamese_CNN":
+        net=Siamese_CNN().to(device)
+    summary(net,[(1,259),(1,259)])
+
+
+    if arg.phase=="Train":
+        data_path_1=Path("./data",name,"train","data",name+"1_fold"+str(folds)+".npy")
+        data_path_2=Path("./data",name,"train","data",name+"2_fold"+str(folds)+".npy")
+        label_path=Path("./data",name,"train","label",name+"_fold"+str(folds)+".npy")
+        if arg.test_set=="spe":
+            support_path=Path("./data",name,"val","data",name+"_support_1_shot_spe"+"_fold"+str(folds)+".npy")
+            query_path=Path("./data",name,"val","data",name+"_query_1_shot_spe"+"_fold"+str(folds)+".npy")
+            label_val_path=Path("./data",name,"val","label",name+"_1_shot_spe"+"_fold"+str(folds)+".npy")
+        else:
+            support_path=Path("./data",name,"val","data",name+"_support_1_shot"+"_fold"+str(folds)+".npy")
+            query_path=Path("./data",name,"val","data",name+"_query_1_shot"+"_fold"+str(folds)+".npy")
+            label_val_path=Path("./data",name,"val","label",name+"_1_shot"+"_fold"+str(folds)+".npy")
+        train_dataset=ECGDataset_pair(data_path_1,data_path_2,label_path)
+        train_loader = DataLoader(train_dataset, batch_size=arg.batch_size, shuffle=True, num_workers=arg.num_workers, pin_memory=True)
+        val_dataset=ECGDataset_few_shot(support_path,query_path,label_val_path)
+        val_loader = DataLoader(val_dataset, batch_size=arg.batch_size, shuffle=False, num_workers=arg.num_workers, pin_memory=True)
+        optimizer = torch.optim.Adam(net.parameters(), lr=arg.lr)
+        criterion = nn.BCELoss()
+        print("train")
+        if arg.resume:
+            net.load_state_dict(torch.load(arg.model_path,map_location=device))
+        train_loss=[]
+        val_loss=[]
+        arg.best_metric=100.0
+        arg.patience=100
+        shot=1
+        for epoch in range(arg.epochs):
+            train_loss_temp=train(train_loader, net, arg, criterion, epoch, optimizer, device)
+            train_loss.append(train_loss_temp)
+            _,_,val_loss_temp,flag=evaluation(val_loader,net,arg,criterion,shot,device)
+            val_loss.append(val_loss_temp)
+            if flag:
+                break
+        np.save(str(arg.result_path)+"/"+arg.model_name+"_train_loss_"+arg.test_set+"_fold"+str(folds)+".npy",train_loss)
+        np.save(str(arg.result_path)+"/"+arg.model_name+"_val_loss_"+arg.test_set+"_fold"+str(folds)+".npy",val_loss)
+    else:
+        shots=[1,5]
+        for shot in shots:
+            if arg.test_set=="spe":
+                support_path=Path("./data",name,"test","data",name+"_support_"+str(shot)+"_shot_spe"+"_fold"+str(folds)+".npy")
+                query_path=Path("./data",name,"test","data",name+"_query_"+str(shot)+"_shot_spe"+"_fold"+str(folds)+".npy")
+                label_path=Path("./data",name,"test","label",name+"_"+str(shot)+"_shot_spe"+"_fold"+str(folds)+".npy")
+            else:
+                support_path=Path("./data",name,"test","data",name+"_support_"+str(shot)+"_shot"+"_fold"+str(folds)+".npy")
+                query_path=Path("./data",name,"test","data",name+"_query_"+str(shot)+"_shot"+"_fold"+str(folds)+".npy")
+                label_path=Path("./data",name,"test","label",name+"_"+str(shot)+"_shot"+"_fold"+str(folds)+".npy")
+            test_dataset=ECGDataset_few_shot(support_path,query_path,label_path)
+            test_loader = DataLoader(test_dataset, batch_size=arg.batch_size, shuffle=False, num_workers=arg.num_workers, pin_memory=True)
+            criterion = nn.BCELoss()
+            net.load_state_dict(torch.load(arg.model_path, map_location=device))
+            y_true,y_score,_,_=evaluation(test_loader,net,arg,criterion,shot,device)
+            result_path=Path(arg.result_path,str(arg.model_name)+"_"+arg.test_set+"_fold"+str(folds))
+            save_result(y_true,y_score,result_path,shot)
         
 
 def train_on_dataset(arg,dataset):
@@ -172,19 +254,43 @@ def train_on_dataset(arg,dataset):
             name="mitbih_"+str(dataset_num)+"_pair"
             train_relation(arg,name)
 
+def train_on_dataset_10fold(arg,dataset):
+    train_time={}
+    for dataset_num in dataset:
+        train_time[str(dataset_num)]=[]
+        if arg.data_dir=="./mit_bih":
+            for folds in range(10):
+                name="mitbih_"+str(dataset_num)+"_pair"
+                start_time=time.time()
+                train_relation_10_fold(arg,name,folds)
+                end_time=time.time()
+                train_time[str(dataset_num)].append(end_time-start_time)
+    df_time=pd.DataFrame(train_time)
+    df_time.to_csv(str(arg.result_path)+"/"+str(arg.model_name)+"_"+arg.test_set+"_"+arg.phase+"_time.csv")
+
 if __name__=="__main__":
     arg = ar.parse_args()
     data_dir = os.path.normpath(arg.data_dir)
     database = os.path.basename(data_dir)
-    dataset=[1,5,10,30,50,90,150]
+    dataset=[5]
     print(arg.data_dir)
     print("Train on:",arg.model_name)
-    train_on_dataset(arg,dataset)
+    # train_on_dataset(arg,dataset)
+    # arg.phase="test"
+    # train_on_dataset(arg,dataset)
+    # arg.phase="train"
+    # arg.test_set="spe"
+    # train_on_dataset(arg,dataset)
+    # arg.phase="test"
+    # train_on_dataset(arg,dataset)
+
+    train_on_dataset_10fold(arg,dataset)
     arg.phase="test"
-    train_on_dataset(arg,dataset)
-    arg.phase="train"
+    train_on_dataset_10fold(arg,dataset)
+    arg.phase="Train"
     arg.test_set="spe"
-    train_on_dataset(arg,dataset)
+    train_on_dataset_10fold(arg,dataset)
     arg.phase="test"
-    train_on_dataset(arg,dataset)
+    train_on_dataset_10fold(arg,dataset)
+    
     

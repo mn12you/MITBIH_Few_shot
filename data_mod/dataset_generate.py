@@ -10,7 +10,7 @@ import numpy as np
 import pickle as pkl
 from matplotlib import pyplot as plt
 from data_mod.dataset import ECGDataset
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, KFold
 import random
 
 
@@ -69,42 +69,52 @@ if __name__=="__main__":
     y_label=np.squeeze(y_label,axis=None)
     print(y_label.shape)
     print(y_data.shape)
-    X_train, X_test, y_train, y_test = train_test_split(y_data, y_label, test_size=0.1, random_state=arg.seed)
-    X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=arg.seed)
-    data_diff=["1"]
-    for diff in data_diff:
-        base_path=path=Path("./data",basepath+"_"+diff)
-        train_data_path=Path(base_path,"train","data",basepath+"_"+diff+".npy")
-        train_label_path=Path(base_path,"train","label",basepath+"_"+diff+".npy")
-        val_data_path=Path(base_path,"val","data",basepath+"_"+diff+".npy")
-        val_label_path=Path(base_path,"val","label",basepath+"_"+diff+".npy")
-        test_data_path=Path(base_path,"test","data",basepath+"_"+diff+".npy")
-        test_label_path=Path(base_path,"test","label",basepath+"_"+diff+".npy")
-        random_num=int(diff)
-        train_data=[]
-        train_label=[]
-        for class_num in range(y_train.shape[-1]):
-            c_index=frozenset(np.where(y_train[:,class_num]==1)[0].tolist())
-            shot_temp= random.sample(c_index, random_num)
-            train_data=train_data+shot_temp
-            train_label=train_label+shot_temp
-        data=X_train[train_data]
-        label=y_train[train_label]
-        print(diff)
-        print(data.shape)
-        print(label.shape)
-        np.save(train_data_path,data)
-        np.save(train_label_path,label)
-        print(diff)
-        print(X_val.shape)
-        print(y_val.shape)
-        np.save(val_data_path,X_val)
-        np.save(val_label_path,y_val)
-        print(diff)
-        print(X_test.shape)
-        print(y_test.shape)
-        np.save(test_data_path,X_test)
-        np.save(test_label_path,y_test)
+    # X_train, X_test, y_train, y_test = train_test_split(y_data, y_label, test_size=0.1, random_state=arg.seed)
+    # X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=arg.seed)
+    kf = KFold(n_splits=10,shuffle=True,random_state=arg.seed)
+
+    for i, (train_index,test_index) in enumerate(kf.split(y_data)):
+        data_diff=["1","5","10","30","50","90","150"]
+
+        X_train = y_data[train_index]
+        y_train=y_label[train_index]
+        X_test=y_data[test_index]
+        y_test=y_label[test_index]
+        X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=arg.seed)
+
+        for diff in data_diff:
+            base_path=path=Path("./data",basepath+"_"+diff)
+            train_data_path=Path(base_path,"train","data",basepath+"_"+diff+"_fold"+str(i)+".npy")
+            train_label_path=Path(base_path,"train","label",basepath+"_"+diff+"_fold"+str(i)+".npy")
+            val_data_path=Path(base_path,"val","data",basepath+"_"+diff+"_fold"+str(i)+".npy")
+            val_label_path=Path(base_path,"val","label",basepath+"_"+diff+"_fold"+str(i)+".npy")
+            test_data_path=Path(base_path,"test","data",basepath+"_"+diff+"_fold"+str(i)+".npy")
+            test_label_path=Path(base_path,"test","label",basepath+"_"+diff+"_fold"+str(i)+".npy")
+            random_num=int(diff)
+            train_data=[]
+            train_label=[]
+            for class_num in range(y_train.shape[-1]):
+                c_index=frozenset(np.where(y_train[:,class_num]==1)[0].tolist())
+                shot_temp= random.sample(c_index, random_num)
+                train_data=train_data+shot_temp
+                train_label=train_label+shot_temp
+            data=X_train[train_data]
+            label=y_train[train_label]
+            print(diff)
+            print(data.shape)
+            print(label.shape)
+            np.save(train_data_path,data)
+            np.save(train_label_path,label)
+            print(diff)
+            print(X_val.shape)
+            print(y_val.shape)
+            np.save(val_data_path,X_val)
+            np.save(val_label_path,y_val)
+            print(diff)
+            print(X_test.shape)
+            print(y_test.shape)
+            np.save(test_data_path,X_test)
+            np.save(test_label_path,y_test)
             
 
 

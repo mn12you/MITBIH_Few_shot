@@ -18,7 +18,6 @@ def folder_generate(name):
     data_diff=["1","5","10","30","50","90","150"]
 
     for diff in data_diff:
-        diff=diff+"_cwt"
         path=Path("./data",name+"_"+diff+"_"+"pair")
         if not path.exists():
             path.mkdir()
@@ -67,48 +66,50 @@ if __name__=="__main__":
     # y_label=np.squeeze(y_label,axis=None)
     # print(y_label.shape)
     # print(y_data.shape)
-    data_diff=["1","5","10","30","50","90","150"]
-    for diff in data_diff:
-        diff=diff+"_cwt"
-        base_path=path=Path("./data",basepath+"_"+diff)
-        train_data_path=Path(base_path,"train","data",basepath+"_"+diff+".npy")
-        train_label_path=Path(base_path,"train","label",basepath+"_"+diff+".npy")
-        base_path=path=Path("./data",basepath+"_"+diff+"_"+"pair")
-        train_data_path_save_1=Path(base_path,"train","data",basepath+"_"+diff+"_"+"pair1"+".npy")
-        train_data_path_save_2=Path(base_path,"train","data",basepath+"_"+diff+"_"+"pair2"+".npy")
-        train_label_path_save=Path(base_path,"train","label",basepath+"_"+diff+"_"+"pair"+".npy")
-        train_dataset=ECGDataset_all(train_data_path,train_label_path)
-        train_loader = DataLoader(train_dataset, batch_size=64, shuffle=False, num_workers=8)
 
-        output_list=[]
-        labels_list=[]
-        for _, (data, labels) in enumerate(tqdm(train_loader)):
-                output_list.append(data)
-                labels_list.append(labels)
-        y_data = np.vstack(output_list)
-        y_label = np.vstack(labels_list)
+    for folds in range(10):
+            
+        data_diff=["1","5","10","30","50","90","150"]
+        for diff in data_diff:
+            base_path=Path("./data",basepath+"_"+diff)
+            train_data_path=Path(base_path,"train","data",basepath+"_"+diff+"_fold"+str(folds)+".npy")
+            train_label_path=Path(base_path,"train","label",basepath+"_"+diff+"_fold"+str(folds)+".npy")
+            base_path=Path("./data",basepath+"_"+diff+"_"+"pair")
+            train_data_path_save_1=Path(base_path,"train","data",basepath+"_"+diff+"_"+"pair1"+"_fold"+str(folds)+".npy")
+            train_data_path_save_2=Path(base_path,"train","data",basepath+"_"+diff+"_"+"pair2"+"_fold"+str(folds)+".npy")
+            train_label_path_save=Path(base_path,"train","label",basepath+"_"+diff+"_"+"pair"+"_fold"+str(folds)+".npy")
+            train_dataset=ECGDataset_all(train_data_path,train_label_path)
+            train_loader = DataLoader(train_dataset, batch_size=64, shuffle=False, num_workers=8)
 
-        output_list_1=[]
-        output_list_2=[]
-        final_label_list=[]#1 the same; 0 different
-        for i, j in combinations(range(y_label.shape[0]), 2):
-            output_list_1.append(i)
-            output_list_2.append(j)
-            if np.argmax(y_label[i])==np.argmax(y_label[j]):
-                final_label_list.append(np.array([[1]]))
-            else:
-                final_label_list.append(np.array([[0]]))
-        y_label = np.vstack(final_label_list)
-        y_data1=y_data[output_list_1]
-        y_data2=y_data[output_list_2]
-        print(diff)
-        print(y_data1.shape)
-        print(y_data2.shape)
-        print(y_label.shape)
+            output_list=[]
+            labels_list=[]
+            for _, (data, labels) in enumerate(tqdm(train_loader)):
+                    output_list.append(data)
+                    labels_list.append(labels)
+            y_data = np.vstack(output_list)
+            y_label = np.vstack(labels_list)
 
-        np.save(train_data_path_save_1,y_data1)
-        np.save(train_data_path_save_2,y_data2)
-        np.save(train_label_path_save,y_label)
+            output_list_1=[]
+            output_list_2=[]
+            final_label_list=[]#1 the same; 0 different
+            for i, j in combinations(range(y_label.shape[0]), 2):
+                output_list_1.append(i)
+                output_list_2.append(j)
+                if np.argmax(y_label[i])==np.argmax(y_label[j]):
+                    final_label_list.append(np.array([[1]]))
+                else:
+                    final_label_list.append(np.array([[0]]))
+            y_label = np.vstack(final_label_list)
+            y_data1=y_data[output_list_1]
+            y_data2=y_data[output_list_2]
+            print(diff)
+            print(y_data1.shape)
+            print(y_data2.shape)
+            print(y_label.shape)
+
+            np.save(train_data_path_save_1,y_data1)
+            np.save(train_data_path_save_2,y_data2)
+            np.save(train_label_path_save,y_label)
             
 
 
