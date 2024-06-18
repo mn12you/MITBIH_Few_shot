@@ -14,6 +14,8 @@
 module purge
 ml miniconda3
 conda activate ECG_SHAP_39 #進入 conda 環境
-python -u "./data_mod/cwt_generate.py"
+# python -u "./data_mod/cwt_generate.py"
+# python -u "./data_mod/dataset_generate.py"
 python -u "./data_mod/pair_generate.py"
+# python -u "./data_mod/dataset_spe_test.py"
 python -u "./data_mod/few_shot_generate.py"

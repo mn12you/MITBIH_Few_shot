@@ -272,14 +272,12 @@ if __name__=="__main__":
     arg = ar.parse_args()
     data_dir = os.path.normpath(arg.data_dir)
     database = os.path.basename(data_dir)
-    dataset=[5]
+    dataset=[1,5,10,30,50,90,150]
     print(arg.data_dir)
     print("Train on:",arg.model_name)
     # train_on_dataset(arg,dataset)
     # arg.phase="test"
     # train_on_dataset(arg,dataset)
-<<<<<<< HEAD
-=======
     # arg.phase="train"
     # arg.test_set="spe"
     # train_on_dataset(arg,dataset)
@@ -289,7 +287,6 @@ if __name__=="__main__":
     train_on_dataset_10fold(arg,dataset)
     arg.phase="test"
     train_on_dataset_10fold(arg,dataset)
->>>>>>> 7ebb6e63c2c7a919d8dd2534159263119fc436d9
     arg.phase="Train"
     arg.test_set="spe"
     train_on_dataset_10fold(arg,dataset)
