@@ -92,14 +92,14 @@ if __name__=="__main__":
     for folds in range(10):
         
         for diff in data_diff:
-            base_path=path=Path("./data",basepath+"_"+diff)
-            test_data_path=Path(base_path,"test","data",basepath+"_"+diff+"_fold"+str(folds)+".npy")
-            test_label_path=Path(base_path,"test","label",basepath+"_"+diff+"_fold"+str(folds)+".npy")
-            val_data_path=Path(base_path,"val","data",basepath+"_"+diff+"_fold"+str(folds)+".npy")
-            val_label_path=Path(base_path,"val","label",basepath+"_"+diff+"_fold"+str(folds)+".npy")
+            base_path=Path("./data",basepath+"_"+diff)
+            test_data_path=Path(base_path,"test","data",basepath+"_"+diff+"_spe_fold"+str(folds)+".npy")
+            test_label_path=Path(base_path,"test","label",basepath+"_"+diff+"_spe_fold"+str(folds)+".npy")
+            val_data_path=Path(base_path,"val","data",basepath+"_"+diff+"_spe_fold"+str(folds)+".npy")
+            val_label_path=Path(base_path,"val","label",basepath+"_"+diff+"_spe_fold"+str(folds)+".npy")
             train_data_path=Path(base_path,"train","data",basepath+"_"+diff+"_fold"+str(folds)+".npy")
             train_label_path=Path(base_path,"train","label",basepath+"_"+diff+"_fold"+str(folds)+".npy")
-            base_path=path=Path("./data",basepath+"_"+diff+"_"+"pair")
+            base_path=Path("./data",basepath+"_"+diff+"_"+"pair")
 
             test_dataset=ECGDataset_all(test_data_path,test_label_path)
             test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, num_workers=1)
@@ -122,12 +122,12 @@ if __name__=="__main__":
             shots=[1,5]
 
             for shot in shots:
-                val_data_path_support=Path(base_path,"val","data",basepath+"_"+diff+"_pair_"+"support_"+str(shot)+"_"+"shot"+"_fold"+str(folds)+".npy")
-                val_data_path_query=Path(base_path,"val","data",basepath+"_"+diff+"_pair_"+"query_"+str(shot)+"_"+"shot"+"_fold"+str(folds)+".npy")
-                val_label_path_save=Path(base_path,"val","label",basepath+"_"+diff+"_pair_"+str(shot)+"_"+"shot"+"_fold"+str(folds)+".npy")
-                test_data_path_support=Path(base_path,"test","data",basepath+"_"+diff+"_pair_"+"support_"+str(shot)+"_"+"shot"+"_fold"+str(folds)+".npy")
-                test_data_path_query=Path(base_path,"test","data",basepath+"_"+diff+"_pair_"+"query_"+str(shot)+"_"+"shot"+"_fold"+str(folds)+".npy")
-                test_label_path_save=Path(base_path,"test","label",basepath+"_"+diff+"_pair_"+str(shot)+"_"+"shot"+"_fold"+str(folds)+".npy")
+                val_data_path_support=Path(base_path,"val","data",basepath+"_"+diff+"_pair_"+"support_"+str(shot)+"_"+"shot"+"_spe_fold"+str(folds)+".npy")
+                val_data_path_query=Path(base_path,"val","data",basepath+"_"+diff+"_pair_"+"query_"+str(shot)+"_"+"shot"+"_spe_fold"+str(folds)+".npy")
+                val_label_path_save=Path(base_path,"val","label",basepath+"_"+diff+"_pair_"+str(shot)+"_"+"shot"+"_spe_fold"+str(folds)+".npy")
+                test_data_path_support=Path(base_path,"test","data",basepath+"_"+diff+"_pair_"+"support_"+str(shot)+"_"+"shot"+"_spe_fold"+str(folds)+".npy")
+                test_data_path_query=Path(base_path,"test","data",basepath+"_"+diff+"_pair_"+"query_"+str(shot)+"_"+"shot"+"_spe_fold"+str(folds)+".npy")
+                test_label_path_save=Path(base_path,"test","label",basepath+"_"+diff+"_pair_"+str(shot)+"_"+"shot"+"_spe_fold"+str(folds)+".npy")
 
                 few_shot(val_loader,val_data_path_support,val_data_path_query,val_label_path_save,shot)
                 few_shot(test_loader,test_data_path_support,test_data_path_query,test_label_path_save,shot)
