@@ -251,7 +251,7 @@ if __name__=="__main__":
     print("Train on:",arg.model_name)
     train_on_dataset_10fold(arg,dataset)
     arg.phase="test"
-    # train_on_dataset_10fold(arg,dataset)
+    train_on_dataset_10fold(arg,dataset)
     # arg.phase="Train"
     # arg.test_set="spe"
     # train_on_dataset_10fold(arg,dataset)
