@@ -18,7 +18,7 @@ module purge
 ml miniconda3
 conda activate ECG_SHAP_39 #進入 conda 環境
 # python -u tain_triplet.py --dataset=baseline_ml_diag --model_name=resnet1d1
-python -u "train_relation.py" --model_name=Siamese_CNN
-# python -u "train_CNN.py" --model_name=CNN
+# python -u "train_relation.py" --model_name=Siamese_CNN
+python -u "train_CNN.py" --model_name=CNN
 # python -u "train_CNN_cwt.py" --model_name=CNN --test_set=spe
 
