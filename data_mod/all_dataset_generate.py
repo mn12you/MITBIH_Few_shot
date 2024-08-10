@@ -78,7 +78,7 @@ if __name__=="__main__":
         X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=arg.seed)
         base_path=Path("./data",basepath)
         train_data_path=Path(base_path,"train","data",basepath+"_fold"+str(i)+".npy")
-        train_label_path=Path(base_path,"train","label",basepath+str(i)+".npy")
+        train_label_path=Path(base_path,"train","label",basepath+"_fold"+str(i)+".npy")
         val_data_path=Path(base_path,"val","data",basepath+"_fold"+str(i)+".npy")
         val_label_path=Path(base_path,"val","label",basepath+"_fold"+str(i)+".npy")
         test_data_path=Path(base_path,"test","data",basepath+"_fold"+str(i)+".npy")
