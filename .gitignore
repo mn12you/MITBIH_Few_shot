@@ -11,3 +11,4 @@ result/*
 !result/.gitkeep
 TWCC_log/*
 !TWCC_log/.gitkeep
+data_mod/test.py
