@@ -180,7 +180,9 @@ def train_CNN_10fold(arg,name,folds):
         val_dataset=ECGDataset_all(val_data_path,val_label_path)
         val_loader = DataLoader(val_dataset, batch_size=arg.batch_size, shuffle=False, num_workers=arg.num_workers, pin_memory=True)
         optimizer = torch.optim.Adam(net.parameters(), lr=arg.lr)
-        criterion = nn.CrossEntropyLoss()
+        weights = [0.9, 0.1, 0.9, 0.9, 0.9 ]
+        class_weights = torch.FloatTensor(weights).cuda()
+        criterion = nn.CrossEntropyLoss(weight=class_weights )
         print("train")
         if arg.resume:
             net.load_state_dict(torch.load(arg.model_path,map_location=device))
