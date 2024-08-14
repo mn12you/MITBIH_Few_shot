@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal",
-            "args":["--phase","test"]
+            "args":["--model_name","CNN"]
         }
     ]
 }

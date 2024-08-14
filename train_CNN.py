@@ -237,7 +237,7 @@ if __name__=="__main__":
     arg = ar.parse_args()
     data_dir = os.path.normpath(arg.data_dir)
     database = os.path.basename(data_dir)
-    dataset=["all"]
+    dataset=['all']
     print(arg.data_dir)
     # print("Train on:",arg.model_name)
     # train_on_dataset(arg,dataset)
